@@ -1,0 +1,29 @@
+---
+title: "testing"
+format: html
+editor: visual
+---
+
+```{r}
+library(textclean)
+```
+
+```{r}
+
+```
+
+```{r}
+names(naturtyper) <- textclean::replace_non_ascii(names(naturtyper))
+```
+
+```{r}
+temp <- naturtyper %>%
+  group_by(kartleggingsar) %>%
+  summarise(count = n())
+```
+
+```{r}
+ggplot(temp, aes(x = kartleggingsar, y = count))+
+  geom_bar(stat="identity")+
+  theme_anders()
+```

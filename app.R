@@ -11,7 +11,7 @@ library(DT)
 #library(tidyverse)
 #library(readxl)
 
-#source("R/global.R")
+source("R/global.R")
 
 
 
