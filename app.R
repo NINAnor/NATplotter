@@ -53,11 +53,16 @@ ui <-
     tabPanel("Oversikt",
              sidebarLayout(
                sidebarPanel(width = 3,
-                            radioButtons('countOrArea',
+                            radioButtons('y-axis-oversikt',
                                          'Hva vil du ha på y-aksen?',
                                          choices = c("Antall_lokaliteter", "Areal_km2"),
                                          selected = "Antall_lokaliteter"
-                                         )),
+                                         ),
+                            radioButtons('x-axis-oversikt',
+                                         'Hva vil du ha på x-aksen?',
+                                         choices = c("kartlegginsar", "tilstand", "naturmangfold", "lokalitetskvalitet", "mosaikk", "usikkerhet", "hovedøkosystem", "oppdragstaker", "objtype"),
+                                         selected = "kartlegginsar"
+                            )),
              mainPanel(width = 9,
                        tabsetPanel(
                          tabPanel("Figur", plotOutput('years')),
@@ -116,7 +121,7 @@ server <- function(input, output, session) ({
               Areal_km2 = round(sum(km2), 0))
   
   output$years <- renderPlot({
-    ggplot(summary1, aes_string(x = "kartleggingsar", y = input$countOrArea))+
+    ggplot(summary1, aes_string(x = "kartleggingsar", y = input$y-axis-oversikt))+
       geom_bar(stat="identity",
                fill = "grey80",
                colour = "grey20",

@@ -29,3 +29,21 @@ ggplot(summary1, aes(x = kartleggingsar, y = Antall_lokaliteter))+
                linewidth=1.5)+
       theme_bw(base_size = 12)
 ```
+
+
+```{r}
+ summary2 <- naturtyper %>%
+    group_by(uk_naertruet) %>%
+    summarise(Antall_lokaliteter = n(),
+              Areal_km2 = round(sum(km2), 0))
+```
+
+```{r}
+ggplot(summary2, aes(x = uk_naertruet, y = Antall_lokaliteter))+
+      geom_bar(stat="identity",
+               fill = "grey80",
+               colour = "grey20",
+               linewidth=1.5)+
+      theme_bw(base_size = 12)
+```
+
