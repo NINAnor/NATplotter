@@ -3,6 +3,7 @@ library(shiny)
 #library(shinydashboard)
 library(ggplot2)
 library(dashboardthemes)
+library(dplyr)
 #library(shinyFiles)
 #library(shinyWidgets)
 library(DT)
@@ -51,7 +52,12 @@ ui <-
     # **TAB 1 ----
     tabPanel("Oversikt",
              sidebarLayout(
-               sidebarPanel(width = 3),
+               sidebarPanel(width = 3,
+                            radioButtons('countOrArea',
+                                         'Hva vil du ha på y-aksen?',
+                                         choices = c("Antall_lokaliteter", "Areal_km2"),
+                                         selected = "Antall_lokaliteter"
+                                         )),
              mainPanel(width = 9,
                        tabsetPanel(
                          tabPanel("Figur", plotOutput('years')),
@@ -103,26 +109,23 @@ server <- function(input, output, session) ({
     readData(session, naturtyper)
   }
   
-    
-    
+  
+  summary1 <- naturtyper %>%
+    group_by(kartleggingsar) %>%
+    summarise(Antall_lokaliteter = n(),
+              Areal_km2 = round(sum(km2), 0))
+  
   output$years <- renderPlot({
-    temp <- naturtyper %>%
-      group_by(kartleggingsar) %>%
-      summarise(count = n())
-    
-    ggplot(temp, aes(x = kartleggingsar, y = count))+
+    ggplot(summary1, aes_string(x = "kartleggingsar", y = input$countOrArea))+
       geom_bar(stat="identity",
                fill = "grey80",
                colour = "grey20",
                linewidth=1.5)+
-      theme_bw(base_size = 12)+
-      labs(x = "År", y = "Antall lokaliteter")
+      theme_bw(base_size = 12)
   })
   
   output$years_tbl <- renderDT({
-    naturtyper %>%
-      group_by('Kartleggingsår' = kartleggingsar) %>%
-      summarise(Antall_lokaliteter = n())
+    summary1
   })
   
   
