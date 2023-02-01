@@ -13,5 +13,8 @@ path <- ifelse(dir == "C:",
 
 dat <- sf::read_sf(paste0(path, "Natur_Naturtyper_NiN_norge_med_svalbard_25833.gdb")) %>%
   as.data.frame() %>%
-  select(-SHAPE) %>%
-  saveRDS(paste0(path, "naturtyper.rds"))
+  select(-SHAPE)
+
+names(dat) <- textclean::replace_non_ascii(names(dat))
+  
+saveRDS(dat, paste0(path, "naturtyper.rds"))

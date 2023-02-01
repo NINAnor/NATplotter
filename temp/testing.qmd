@@ -4,16 +4,9 @@ format: html
 editor: visual
 ---
 
-```{r}
-library(textclean)
-```
 
 ```{r}
-
-```
-
-```{r}
-names(naturtyper) <- textclean::replace_non_ascii(names(naturtyper))
+naturtyper <- readRDS(paste0(path, "naturtyper.rds"))
 ```
 
 ```{r}
@@ -24,6 +17,9 @@ temp <- naturtyper %>%
 
 ```{r}
 ggplot(temp, aes(x = kartleggingsar, y = count))+
-  geom_bar(stat="identity")+
-  theme_anders()
+  geom_bar(stat="identity",
+           fill = "grey80",
+           colour = "grey20",
+           size=1.5)+
+  theme_bw(base_size = 12)
 ```

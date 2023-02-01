@@ -4,15 +4,40 @@ library(shiny)
 library(ggplot2)
 library(dashboardthemes)
 #library(shinyFiles)
-library(shinyWidgets)
+#library(shinyWidgets)
 library(DT)
 #library(uuid)
 #library(shinyalert)
 #library(tidyverse)
 #library(readxl)
 
-source("R/global.R")
+# source("R/global.R")
 
+
+# Set path to data
+dir <- substr(getwd(), 1,2)
+path <- ifelse(dir == "C:", 
+               "P:/41001581_egenutvikling_anders_kolstad/data/",
+               "/data/Egenutvikling/41001581_egenutvikling_anders_kolstad/data/")
+
+
+# Define data object anme
+naturtyper <- NULL
+
+
+# function to read data with progress bar
+readData <- function(session, naturtyper) {
+  
+  progress <- Progress$new(session)
+  
+  progress$set(value = 0, message = 'Loading...')
+  
+  naturtyper <<- readRDS(paste0(path, "naturtyper.rds"))
+
+  progress$set(value = 0.25, message = 'Loading...')
+  
+  progress$close()
+}
 
 
 
@@ -24,12 +49,15 @@ ui <-
   
     # '-------------       
     # **TAB 1 ----
-    tabPanel("Tab1",
+    tabPanel("Oversikt",
              sidebarLayout(
                sidebarPanel(width = 3),
              mainPanel(width = 9,
+                       tabsetPanel(
+                         tabPanel("Figur", plotOutput('years')),
+                         tabPanel("Tabell", DTOutput('years_tbl'))
+                       )
                        
-                       plotOutput('placeholder')
                        )
              )),
    
@@ -71,10 +99,33 @@ ui <-
 
 server <- function(input, output, session) ({
   
-  output$placeholder <- renderPlot({
-    dat <- cars
-    plot(dat$speed, dat$dist)
+  if(is.null(naturtyper)){
+    readData(session, naturtyper)
+  }
+  
+    
+    
+  output$years <- renderPlot({
+    temp <- naturtyper %>%
+      group_by(kartleggingsar) %>%
+      summarise(count = n())
+    
+    ggplot(temp, aes(x = kartleggingsar, y = count))+
+      geom_bar(stat="identity",
+               fill = "grey80",
+               colour = "grey20",
+               linewidth=1.5)+
+      theme_bw(base_size = 12)+
+      labs(x = "År", y = "Antall lokaliteter")
   })
+  
+  output$years_tbl <- renderDT({
+    naturtyper %>%
+      group_by('Kartleggingsår' = kartleggingsar) %>%
+      summarise(Antall_lokaliteter = n())
+  })
+  
+  
   
   output$placeholder2 <- renderPlot({
     dat <- cars
