@@ -4,6 +4,10 @@ format: html
 editor: visual
 ---
 
+```{r}
+library(tidyverse)
+```
+
 
 ```{r}
 dir <- substr(getwd(), 1,2)
@@ -32,14 +36,17 @@ ggplot(summary1, aes(x = kartleggingsar, y = Antall_lokaliteter))+
 
 
 ```{r}
- summary2 <- naturtyper %>%
-    group_by(uk_naertruet) %>%
+myvar <- rlang::sym("tilstand")
+
+summary2 <- naturtyper %>%
+    group_by(myVar = !!myvar) %>%
     summarise(Antall_lokaliteter = n(),
               Areal_km2 = round(sum(km2), 0))
+class(summary2)
 ```
 
 ```{r}
-ggplot(summary2, aes(x = uk_naertruet, y = Antall_lokaliteter))+
+ggplot(summary2, aes_string(x = "myVar", y = "Antall_lokaliteter"))+
       geom_bar(stat="identity",
                fill = "grey80",
                colour = "grey20",

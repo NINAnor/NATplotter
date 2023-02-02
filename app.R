@@ -1,9 +1,8 @@
 # TOP ----
 library(shiny)
 #library(shinydashboard)
-library(ggplot2)
-library(dashboardthemes)
-library(dplyr)
+#library(dashboardthemes)
+library(tidyverse)
 #library(shinyFiles)
 #library(shinyWidgets)
 library(DT)
@@ -60,8 +59,20 @@ ui <-
                                          ),
                             radioButtons('x-axis-oversikt',
                                          'Hva vil du ha på x-aksen?',
-                                         choices = c("kartlegginsar", "tilstand", "naturmangfold", "lokalitetskvalitet", "mosaikk", "usikkerhet", "hovedøkosystem", "oppdragstaker", "objtype"),
-                                         selected = "kartlegginsar"
+                                         choices = c("kartleggingsar", 
+                                                     "tilstand", 
+                                                     "naturmangfold", 
+                                                     "lokalitetskvalitet", 
+                                                     "mosaikk", 
+                                                     "usikkerhet", 
+                                                     "hovedøkosystem", 
+                                                     "oppdragstaker", 
+                                                     "objtype",
+                                                     "uk_naertruet",
+                                                     "uk_sentralokosystemfunksjon",
+                                                     "uk_spesieltdarligkartlagt",
+                                                     "uk_truet"),
+                                         selected = "kartleggingsar"
                             )),
              mainPanel(width = 9,
                        tabsetPanel(
@@ -114,23 +125,27 @@ server <- function(input, output, session) ({
     readData(session, naturtyper)
   }
   
+  myX <- reactive(rlang::sym(input$x-axis-oversikt))
+  myy <- reactive(rlang::sym(input$y-axis-oversikt))
   
-  summary1 <- naturtyper %>%
-    group_by(kartleggingsar) %>%
+  
+  summary1 <- reactive({return(tbl_df(naturtyper) %>%
+    group_by(myX_var = !!myX()) %>%
     summarise(Antall_lokaliteter = n(),
-              Areal_km2 = round(sum(km2), 0))
+              Areal_km2 = round(sum(km2), 0)))})
   
   output$years <- renderPlot({
-    ggplot(summary1, aes_string(x = "kartleggingsar", y = input$y-axis-oversikt))+
+    ggplot(summary1(), aes(x = myX_var, y = !!myy()))+
       geom_bar(stat="identity",
                fill = "grey80",
                colour = "grey20",
                linewidth=1.5)+
-      theme_bw(base_size = 12)
+      theme_bw(base_size = 12)+
+      xlab(input$x-axis-oversikt)
   })
   
   output$years_tbl <- renderDT({
-    summary1
+    summary1()
   })
   
   
