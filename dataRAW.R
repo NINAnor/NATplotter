@@ -134,6 +134,7 @@ dat2$tilstand[dat2$tilstand == "Svært redusert"] <- "1 - Svært redusert"
 
 
 saveRDS(dat2, paste0(path, "naturtyper.rds"))
+saveRDS(naturtyper, "shinyData/naturtyper.rds")
 
 
 

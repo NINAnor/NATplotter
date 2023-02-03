@@ -7,12 +7,6 @@ library(shinyWidgets)
 library(DT)
 
 
-# Set path to data
-dir <- substr(getwd(), 1,2)
-path <- ifelse(dir == "C:", 
-               "P:/41001581_egenutvikling_anders_kolstad/data/",
-               "/data/Egenutvikling/41001581_egenutvikling_anders_kolstad/data/")
-
 
 # Define data object anme
 naturtyper <- NULL
@@ -25,7 +19,7 @@ readData <- function(session, naturtyper) {
   
   progress$set(value = 0, message = 'Loading...')
   
-  naturtyper <<- readRDS(paste0(path, "naturtyper.rds"))
+  naturtyper <<- readRDS("shinyData/naturtyper.rds")
 
   progress$set(value = 0.25, message = 'Loading...')
   
