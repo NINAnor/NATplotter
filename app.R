@@ -45,12 +45,14 @@ varList <- c("kartleggingsår",
              "mosaikk", 
              "usikkerhet", 
              "hovedøkosystem", 
-             "oppdragstaker", 
+             "oppdragstaker",
+             "fylke",
              "uk_nærtruet",
              "uk_sentraløkosystemfunksjon",
              "uk_spesieltdårligkartlagt",
              "uk_truet")
 
+varList_special <- c("hovedøkosystem","oppdragstaker", "fylke")
 
 ui <- 
   navbarPage(
@@ -140,7 +142,7 @@ server <- function(input, output, session) ({
   output$years <- renderPlot({
     
     dat_plot <- summary1()
-    if(input$x_axis_oversikt %in% c("hovedøkosystem","oppdragstaker")) dat_plot <- dat_plot %>% mutate(myVar = fct_reorder(factor(myVar), !! rlang::sym(input$y_axis_oversikt)))
+    if(input$x_axis_oversikt %in% varList_special) dat_plot <- dat_plot %>% mutate(myVar = fct_reorder(factor(myVar), !! rlang::sym(input$y_axis_oversikt)))
 
     gg_out <- ggplot(dat_plot, aes_string(x = "myVar", y = input$y_axis_oversikt))+
       geom_bar(stat="identity",
@@ -150,7 +152,7 @@ server <- function(input, output, session) ({
       theme_bw(base_size = 12)+
       xlab(input$x_axis_oversikt)
     
-    if(input$x_axis_oversikt %in% c("hovedøkosystem","oppdragstaker")) gg_out <- gg_out + coord_flip()
+    if(input$x_axis_oversikt %in% varList_special) gg_out <- gg_out + coord_flip()
     
     return(gg_out)
   })
