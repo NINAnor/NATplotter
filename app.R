@@ -4,23 +4,16 @@ library(tidyverse)
 library(shinyWidgets)
 library(DT)
 
-
-
 # Define data object anme
 naturtyper <- NULL
 
-
 # function to read data with progress bar
 readData <- function(session, naturtyper) {
-  
   progress <- Progress$new(session)
-  
   progress$set(value = 0, message = 'Loading...')
-  
   naturtyper <<- readRDS("shinyData/naturtyper.rds")
-
+  ntyper <<- unique(naturtyper$naturtype)
   progress$set(value = 0.25, message = 'Loading...')
-  
   progress$close()
 }
 
@@ -40,6 +33,7 @@ varList <- c("kartleggingsår",
              "uk_truet")
 
 varList_special <- c("hovedøkosystem","oppdragstaker", "fylke")
+
 
 ui <- 
   navbarPage(
@@ -79,8 +73,20 @@ ui <-
              
     # '-------------       
     # **TAB 2 ----
-    tabPanel("Tab2",
-             plotOutput('placeholder2')),
+    tabPanel("Naturtyper",
+             sidebarLayout(
+               sidebarPanel(width = 3,
+                            pickerInput('naturtype',
+                                        "Velg naturtype",
+                                        choices = ntyper,
+                                        options = list(
+                                          `live-search` = TRUE))
+               ),
+               mainPanel(width = 9,
+                         plotOutput('ntyp_years')
+                         )
+               )
+             ),
 
 
     # '-------------             
@@ -88,19 +94,14 @@ ui <-
     navbarMenu("More",
                
                # Instructions----
-               tabPanel("Instructions",
-                        p("This app was developed by Anders L. Kolstad ", tags$a(href="https://github.com/anders-kolstad/", target='_blank', "")),
+               tabPanel("Contact",
+                        p("This app was developed by  ", tags$a(href="https://github.com/anders-kolstad/", target='_blank', "Anders L. Kolstad.")),
                         
-                        
-                        # Contact ----
-                        
-                        tabPanel("Contact",
-                                 
-                                 p("...",style = "width: 500px;")
+                        p("...",style = "width: 500px;")
                         )
                )
     )
-    )
+    
 
 
 
@@ -118,19 +119,15 @@ server <- function(input, output, session) ({
   }
   
   
- 
+  # OVERSIKT TAB
   summary1 <- reactive({naturtyper %>%
                           group_by(myVar = !! rlang::sym(input$x_axis_oversikt)) %>%
                           summarise(Antall_lokaliteter = n(),
                                     Areal_km2 = round(sum(km2), 0)) })
   
-  
-  
   output$years <- renderPlot({
-    
     dat_plot <- summary1()
     if(input$x_axis_oversikt %in% varList_special) dat_plot <- dat_plot %>% mutate(myVar = fct_reorder(factor(myVar), !! rlang::sym(input$y_axis_oversikt)))
-
     gg_out <- ggplot(dat_plot, aes_string(x = "myVar", y = input$y_axis_oversikt))+
       geom_bar(stat="identity",
                fill = "grey80",
@@ -138,22 +135,35 @@ server <- function(input, output, session) ({
                linewidth=1.5)+
       theme_bw(base_size = 12)+
       xlab(input$x_axis_oversikt)
-    
     if(input$x_axis_oversikt %in% varList_special) gg_out <- gg_out + coord_flip()
-    
     return(gg_out)
   })
   
   
-   output$years_tbl <- renderDT({
+  output$years_tbl <- renderDT({
     summary1() %>%
        rename(!!input$x_axis_oversikt := myVar)
        })
-
   
-  output$placeholder2 <- renderPlot({
-    dat <- cars
-    plot(dat$speed, dat$dist)
+  
+  # NATURTYPE TAB
+  ntyp_selected <- reactive({
+    naturtyper %>%
+      filter(naturtype == input$naturtype) %>%
+      group_by(kartleggingsår) %>%
+      summarise(Antall_lokaliteter = n(),
+                Areal_km2 = round(sum(km2), 0))
+  })
+  
+
+  output$ntyp_years <- renderPlot({
+    gg_out <- ggplot(ntyp_selected(), aes(x = kartleggingsår, y = Antall_lokaliteter))+
+      geom_bar(stat="identity",
+               fill = "grey80",
+               colour = "grey20",
+               linewidth=1.5)+
+      theme_bw(base_size = 12)
+    return(gg_out)
   })
   
   })

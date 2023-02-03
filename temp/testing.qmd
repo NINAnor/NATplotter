@@ -54,3 +54,11 @@ ggplot(summary2, aes_string(x = "myVar", y = "Antall_lokaliteter"))+
       theme_bw(base_size = 12)
 ```
 
+```{r}
+naturtyper %>%
+      filter(naturtype == "Naturbeitemark") %>%
+      group_by(kartleggingsår) %>%
+      summarise(Antall_lokaliteter = n(),
+                Areal_km2 = round(sum(km2), 0))
+```
+
