@@ -20,13 +20,13 @@ naturtyper <- readRDS(paste0(path, "naturtyper.rds"))
 
 ```{r}
  summary1 <- naturtyper %>%
-    group_by(kartleggingsar) %>%
+    group_by(tilstand) %>%
     summarise(Antall_lokaliteter = n(),
               Areal_km2 = round(sum(km2), 0))
 ```
 
 ```{r}
-ggplot(summary1, aes(x = kartleggingsar, y = Antall_lokaliteter))+
+ggplot(summary1, aes(x = tilstand, y = Antall_lokaliteter))+
       geom_bar(stat="identity",
                fill = "grey80",
                colour = "grey20",

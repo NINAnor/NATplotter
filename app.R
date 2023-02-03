@@ -38,6 +38,19 @@ readData <- function(session, naturtyper) {
 }
 
 
+varList <- c("kartleggingsår", 
+             "tilstand", 
+             "naturmangfold", 
+             "lokalitetskvalitet", 
+             "mosaikk", 
+             "usikkerhet", 
+             "hovedøkosystem", 
+             "oppdragstaker", 
+             "uk_nærtruet",
+             "uk_sentraløkosystemfunksjon",
+             "uk_spesieltdårligkartlagt",
+             "uk_truet")
+
 
 ui <- 
   navbarPage(
@@ -57,20 +70,8 @@ ui <-
                                          ),
                             pickerInput('x_axis_oversikt',
                                          'Hva vil du ha på x-aksen?',
-                                         choices = c("kartleggingsar", 
-                                                     "tilstand", 
-                                                     "naturmangfold", 
-                                                     "lokalitetskvalitet", 
-                                                     "mosaikk", 
-                                                     "usikkerhet", 
-                                                     "hovedøkosystem", 
-                                                     "oppdragstaker", 
-                                                     "objtype",
-                                                     "uk_naertruet",
-                                                     "uk_sentralokosystemfunksjon",
-                                                     "uk_spesieltdarligkartlagt",
-                                                     "uk_truet"),
-                                        selected = "kartleggingsar")
+                                         choices = varList,
+                                        selected = "kartleggingsår")
                             ),
              mainPanel(width = 9,
                        tabsetPanel(
@@ -137,21 +138,27 @@ server <- function(input, output, session) ({
   
   
   output$years <- renderPlot({
-    ggplot(summary1(), aes_string(x = "myVar", y = input$y_axis_oversikt))+
+    
+    dat_plot <- summary1()
+    if(input$x_axis_oversikt %in% c("hovedøkosystem","oppdragstaker")) dat_plot <- dat_plot %>% mutate(myVar = fct_reorder(factor(myVar), !! rlang::sym(input$y_axis_oversikt)))
+
+    gg_out <- ggplot(dat_plot, aes_string(x = "myVar", y = input$y_axis_oversikt))+
       geom_bar(stat="identity",
                fill = "grey80",
                colour = "grey20",
                linewidth=1.5)+
       theme_bw(base_size = 12)+
       xlab(input$x_axis_oversikt)
+    
+    if(input$x_axis_oversikt %in% c("hovedøkosystem","oppdragstaker")) gg_out <- gg_out + coord_flip()
+    
+    return(gg_out)
   })
   
   
-  #myX <- reactive({rlang::sym(input$x_axis_oversikt)})
    output$years_tbl <- renderDT({
     summary1() %>%
        rename(!!input$x_axis_oversikt := myVar)
-    
        })
 
   
