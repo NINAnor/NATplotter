@@ -54,30 +54,28 @@ ui <-
                                          'Hva vil du ha på y-aksen?',
                                          choices = c("Antall_lokaliteter", "Areal_km2"),
                                          selected = "Antall_lokaliteter"
-                                         )
-                            #pickerInput('',
-                            #             'Hva vil du ha på x-aksen?',
-                            #             choices = c("kartleggingsar", 
-                            #                         "tilstand", 
-                            #                         "naturmangfold", 
-                            #                         "lokalitetskvalitet", 
-                            #                         "mosaikk", 
-                            #                         "usikkerhet", 
-                            #                         "hovedøkosystem", 
-                            #                         "oppdragstaker", 
-                            #                         "objtype",
-                            #                         "uk_naertruet",
-                            #                         "uk_sentralokosystemfunksjon",
-                            #                         "uk_spesieltdarligkartlagt",
-                            #                         "uk_truet"),
-                            #            selected = "kartleggingsar")
+                                         ),
+                            pickerInput('x_axis_oversikt',
+                                         'Hva vil du ha på x-aksen?',
+                                         choices = c("kartleggingsar", 
+                                                     "tilstand", 
+                                                     "naturmangfold", 
+                                                     "lokalitetskvalitet", 
+                                                     "mosaikk", 
+                                                     "usikkerhet", 
+                                                     "hovedøkosystem", 
+                                                     "oppdragstaker", 
+                                                     "objtype",
+                                                     "uk_naertruet",
+                                                     "uk_sentralokosystemfunksjon",
+                                                     "uk_spesieltdarligkartlagt",
+                                                     "uk_truet"),
+                                        selected = "kartleggingsar")
                             ),
              mainPanel(width = 9,
                        tabsetPanel(
                          
                          tabPanel("Figur", 
-                                  textOutput('test'),
-                                  #verbatimTextOutput('test2')
                                   plotOutput('years')
                                   ),
                          tabPanel("Tabell", 
@@ -130,47 +128,30 @@ server <- function(input, output, session) ({
   }
   
   
-  output$test <- renderPrint({ input$y_axis_oversikt })
-  #output$test2 <- renderPrint({ input$x-axis-oversikt })
-  
- #summary1 <- reactive({naturtyper %>%
- #                        group_by(myX_var = !! rlang::sym(input$xaxis)) %>%
- #                        summarise(Antall_lokaliteter = n(),
- #                                  Areal_km2 = round(sum(km2), 0))
- #})
-  
-  summary1 <- naturtyper %>%
-                          group_by(myVar = kartleggingsar) %>%
+ 
+  summary1 <- reactive({naturtyper %>%
+                          group_by(myVar = !! rlang::sym(input$x_axis_oversikt)) %>%
                           summarise(Antall_lokaliteter = n(),
-                                    Areal_km2 = round(sum(km2), 0))
+                                    Areal_km2 = round(sum(km2), 0)) })
   
   
-  #summary1 <- reactive({return(tbl_df(naturtyper) %>%
-  #  group_by(myX_var = !!myX()) %>%
-  #  summarise(Antall_lokaliteter = n(),
-  #            Areal_km2 = round(sum(km2), 0)))})
-  #
-  #output$years <- renderPlot({
-  #  ggplot(summary1(), aes(x = myX_var, y = !!myy()))+
-  #    geom_bar(stat="identity",
-  #             fill = "grey80",
-  #             colour = "grey20",
-  #             linewidth=1.5)+
-  #    theme_bw(base_size = 12)+
-  #    xlab(input$x-axis-oversikt)
-  #})
   
   output$years <- renderPlot({
-    ggplot(summary1, aes_string(x = "myVar", y = input$y_axis_oversikt))+
+    ggplot(summary1(), aes_string(x = "myVar", y = input$y_axis_oversikt))+
       geom_bar(stat="identity",
                fill = "grey80",
                colour = "grey20",
                linewidth=1.5)+
-      theme_bw(base_size = 12)
+      theme_bw(base_size = 12)+
+      xlab(input$x_axis_oversikt)
   })
   
+  
+  #myX <- reactive({rlang::sym(input$x_axis_oversikt)})
    output$years_tbl <- renderDT({
-     summary1 
+    summary1() %>%
+       rename(!!input$x_axis_oversikt := myVar)
+    
        })
 
   
