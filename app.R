@@ -4,14 +4,12 @@ library(shiny)
 #library(dashboardthemes)
 library(tidyverse)
 #library(shinyFiles)
-#library(shinyWidgets)
+library(shinyWidgets)
 library(DT)
 #library(uuid)
 #library(shinyalert)
 #library(tidyverse)
 #library(readxl)
-
-# source("R/global.R")
 
 
 # Set path to data
@@ -52,38 +50,44 @@ ui <-
     tabPanel("Oversikt",
              sidebarLayout(
                sidebarPanel(width = 3,
-                            radioButtons('y-axis-oversikt',
+                            pickerInput('y_axis_oversikt',
                                          'Hva vil du ha på y-aksen?',
                                          choices = c("Antall_lokaliteter", "Areal_km2"),
                                          selected = "Antall_lokaliteter"
-                                         ),
-                            radioButtons('x-axis-oversikt',
-                                         'Hva vil du ha på x-aksen?',
-                                         choices = c("kartleggingsar", 
-                                                     "tilstand", 
-                                                     "naturmangfold", 
-                                                     "lokalitetskvalitet", 
-                                                     "mosaikk", 
-                                                     "usikkerhet", 
-                                                     "hovedøkosystem", 
-                                                     "oppdragstaker", 
-                                                     "objtype",
-                                                     "uk_naertruet",
-                                                     "uk_sentralokosystemfunksjon",
-                                                     "uk_spesieltdarligkartlagt",
-                                                     "uk_truet"),
-                                         selected = "kartleggingsar"
-                            )),
+                                         )
+                            #pickerInput('',
+                            #             'Hva vil du ha på x-aksen?',
+                            #             choices = c("kartleggingsar", 
+                            #                         "tilstand", 
+                            #                         "naturmangfold", 
+                            #                         "lokalitetskvalitet", 
+                            #                         "mosaikk", 
+                            #                         "usikkerhet", 
+                            #                         "hovedøkosystem", 
+                            #                         "oppdragstaker", 
+                            #                         "objtype",
+                            #                         "uk_naertruet",
+                            #                         "uk_sentralokosystemfunksjon",
+                            #                         "uk_spesieltdarligkartlagt",
+                            #                         "uk_truet"),
+                            #            selected = "kartleggingsar")
+                            ),
              mainPanel(width = 9,
                        tabsetPanel(
-                         tabPanel("Figur", plotOutput('years')),
-                         tabPanel("Tabell", DTOutput('years_tbl'))
+                         
+                         tabPanel("Figur", 
+                                  textOutput('test'),
+                                  #verbatimTextOutput('test2')
+                                  plotOutput('years')
+                                  ),
+                         tabPanel("Tabell", 
+                                  DTOutput('years_tbl')
+                                  )
                        )
                        
                        )
              )),
    
-
              
     # '-------------       
     # **TAB 2 ----
@@ -125,30 +129,50 @@ server <- function(input, output, session) ({
     readData(session, naturtyper)
   }
   
-  myX <- reactive(rlang::sym(input$x-axis-oversikt))
-  myy <- reactive(rlang::sym(input$y-axis-oversikt))
+  
+  output$test <- renderPrint({ input$y_axis_oversikt })
+  #output$test2 <- renderPrint({ input$x-axis-oversikt })
+  
+ #summary1 <- reactive({naturtyper %>%
+ #                        group_by(myX_var = !! rlang::sym(input$xaxis)) %>%
+ #                        summarise(Antall_lokaliteter = n(),
+ #                                  Areal_km2 = round(sum(km2), 0))
+ #})
+  
+  summary1 <- naturtyper %>%
+                          group_by(myVar = kartleggingsar) %>%
+                          summarise(Antall_lokaliteter = n(),
+                                    Areal_km2 = round(sum(km2), 0))
   
   
-  summary1 <- reactive({return(tbl_df(naturtyper) %>%
-    group_by(myX_var = !!myX()) %>%
-    summarise(Antall_lokaliteter = n(),
-              Areal_km2 = round(sum(km2), 0)))})
+  #summary1 <- reactive({return(tbl_df(naturtyper) %>%
+  #  group_by(myX_var = !!myX()) %>%
+  #  summarise(Antall_lokaliteter = n(),
+  #            Areal_km2 = round(sum(km2), 0)))})
+  #
+  #output$years <- renderPlot({
+  #  ggplot(summary1(), aes(x = myX_var, y = !!myy()))+
+  #    geom_bar(stat="identity",
+  #             fill = "grey80",
+  #             colour = "grey20",
+  #             linewidth=1.5)+
+  #    theme_bw(base_size = 12)+
+  #    xlab(input$x-axis-oversikt)
+  #})
   
   output$years <- renderPlot({
-    ggplot(summary1(), aes(x = myX_var, y = !!myy()))+
+    ggplot(summary1, aes_string(x = "myVar", y = input$y_axis_oversikt))+
       geom_bar(stat="identity",
                fill = "grey80",
                colour = "grey20",
                linewidth=1.5)+
-      theme_bw(base_size = 12)+
-      xlab(input$x-axis-oversikt)
+      theme_bw(base_size = 12)
   })
   
-  output$years_tbl <- renderDT({
-    summary1()
-  })
-  
-  
+   output$years_tbl <- renderDT({
+     summary1 
+       })
+
   
   output$placeholder2 <- renderPlot({
     dat <- cars
