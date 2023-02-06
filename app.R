@@ -46,11 +46,11 @@ ui <-
     tabPanel("Oversikt",
              sidebarLayout(
                sidebarPanel(width = 3,
-                            pickerInput('y_axis_oversikt',
-                                         'Hva vil du ha på y-aksen?',
-                                         choices = c("Antall_lokaliteter", "Areal_km2"),
-                                         selected = "Antall_lokaliteter"
-                                         ),
+                            #pickerInput('y_axis_oversikt',
+                            #             'Hva vil du ha på y-aksen?',
+                            #             choices = c("Antall_lokaliteter", "Areal_km2"),
+                            #             selected = "Antall_lokaliteter"
+                            #             ),
                             pickerInput('x_axis_oversikt',
                                          'Hva vil du ha på x-aksen?',
                                          choices = varList,
@@ -60,7 +60,10 @@ ui <-
                        tabsetPanel(
                          
                          tabPanel("Figur", 
-                                  plotOutput('years')
+                                  column(6,
+                                    plotOutput('years_count')),
+                                  column(6,
+                                    plotOutput('years_area')),
                                   ),
                          tabPanel("Tabell", 
                                   DTOutput('years_tbl')
@@ -83,7 +86,12 @@ ui <-
                                           `live-search` = TRUE))
                ),
                mainPanel(width = 9,
-                         plotOutput('ntyp_years')
+                         column(6, 
+                            plotOutput('ntyp_years_count')
+                                ),
+                         column(6,
+                            plotOutput('ntyp_years_area')
+                                )
                          )
                )
              ),
@@ -125,12 +133,26 @@ server <- function(input, output, session) ({
                           summarise(Antall_lokaliteter = n(),
                                     Areal_km2 = round(sum(km2), 0)) })
   
-  output$years <- renderPlot({
+  output$years_count <- renderPlot({
     dat_plot <- summary1()
-    if(input$x_axis_oversikt %in% varList_special) dat_plot <- dat_plot %>% mutate(myVar = fct_reorder(factor(myVar), !! rlang::sym(input$y_axis_oversikt)))
-    gg_out <- ggplot(dat_plot, aes_string(x = "myVar", y = input$y_axis_oversikt))+
+    if(input$x_axis_oversikt %in% varList_special) dat_plot <- dat_plot %>% mutate(myVar = fct_reorder(factor(myVar), Antall_lokaliteter))
+    gg_out <- ggplot(dat_plot, aes_string(x = "myVar", y = "Antall_lokaliteter"))+
       geom_bar(stat="identity",
-               fill = "grey80",
+               fill = "#FFCC99",
+               colour = "grey20",
+               linewidth=1.5)+
+      theme_bw(base_size = 12)+
+      xlab(input$x_axis_oversikt)
+    if(input$x_axis_oversikt %in% varList_special) gg_out <- gg_out + coord_flip()
+    return(gg_out)
+  })
+  
+  output$years_area <- renderPlot({
+    dat_plot <- summary1()
+    if(input$x_axis_oversikt %in% varList_special) dat_plot <- dat_plot %>% mutate(myVar = fct_reorder(factor(myVar), Antall_lokaliteter))
+    gg_out <- ggplot(dat_plot, aes_string(x = "myVar", y = "Areal_km2"))+
+      geom_bar(stat="identity",
+               fill = "#FF9933",
                colour = "grey20",
                linewidth=1.5)+
       theme_bw(base_size = 12)+
@@ -156,10 +178,20 @@ server <- function(input, output, session) ({
   })
   
 
-  output$ntyp_years <- renderPlot({
+  output$ntyp_years_count <- renderPlot({
     gg_out <- ggplot(ntyp_selected(), aes(x = kartleggingsår, y = Antall_lokaliteter))+
       geom_bar(stat="identity",
-               fill = "grey80",
+               fill = "#FFCC99",
+               colour = "grey20",
+               linewidth=1.5)+
+      theme_bw(base_size = 12)
+    return(gg_out)
+  })
+  
+  output$ntyp_years_area <- renderPlot({
+    gg_out <- ggplot(ntyp_selected(), aes(x = kartleggingsår, y = Areal_km2))+
+      geom_bar(stat="identity",
+               fill = "#FF9933",
                colour = "grey20",
                linewidth=1.5)+
       theme_bw(base_size = 12)
