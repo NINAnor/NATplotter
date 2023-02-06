@@ -37,6 +37,9 @@ varList <- c("kartleggingsår",
              "uk_spesieltdårligkartlagt",
              "uk_truet")
 
+
+
+
 varList_special <- c("hovedøkosystem","oppdragstaker", "fylke", "kommuner", "naturtype", "region")
 varList_special_trunkert <- c("oppdragstaker", "kommuner", "naturtype")
 
@@ -148,16 +151,28 @@ ui <-
              ),
     tabPanel("Naturtyper - utvalg",
              sidebarLayout(
-               sidebarPanel(width=3
+               sidebarPanel(width=3,
+                            pickerInput('naturtype2',
+                                        "Velg naturtype",
+                                        choices = ntyper,
+                                        options = list(
+                                          `live-search` = TRUE)),
+                            pickerInput('variable1',
+                                        "Velg variabel",
+                                        choices = NULL,
+                                        options = list(
+                                          `live-search` = TRUE))
+                            #pickerInput('myFacet',
+                            #            "Velg evt. gruppering",
+                            #            choices = varList2,
+                            #            options = list(
+                            #              `live-search` = TRUE))
                             ),
                mainPanel(width = 9,
+                         fluidRow(p("Her kan du gjøre et enda mer detaljert utvalg for å lage akuratt den figuren du ønsker"),),
                          tabsetPanel(
-                           tabPanel("Figur",
-                              fluidRow(p("Her kan du gjøre et enda mer detaljert utvalg for å lage akuratt den figuren du ønsker"),)
-                              ),
-                           tabPanel("Tabell",
-                              fluidRow(p("Her kan du gjøre et enda mer detaljert utvalg for å lage akuratt den figuren du ønsker"),)
-                              )
+                           tabPanel("Figur"),
+                           tabPanel("Tabell")
                            )
                          )
              )),
@@ -375,6 +390,35 @@ server <- function(input, output, session) ({
                 scales = "free",
                 ncol = 3)
  })
+ 
+ 
+ naturtyper_long_selected2 <- reactive({
+   naturtyper_long %>% 
+     filter(naturtype == input$naturtype2)
+ })
+ 
+# A reactive list of possible variables to look at for each naturtype
+ observeEvent(input$naturtype2, {
+   updatePickerInput(session = session, inputId = "variable1",
+                     choices = unique(naturtyper_long_selected2()$NiN_variable_code))
+ })
+ 
+#output$ntyp_utvalg <- renderPlot({
+#  naturtyper_long %>% 
+#    filter(naturtype == input$naturtype) %>%
+#    group_by(NiN_variable_code, NiN_variable_value) %>%
+#    summarise(Antall_lokaliteter = n(),
+#              Areal_km2 = round(sum(km2), 0)) %>%
+#    ggplot(aes(x = NiN_variable_value, y = Antall_lokaliteter))+
+#    geom_bar(stat="identity",
+#             fill = "#FF9933",
+#             colour = "grey20",
+#             linewidth=1.5)+
+#    theme_bw(base_size = 12)+
+#    facet_wrap(.~NiN_variable_code,
+#               scales = "free",
+#               ncol = 3)
+#})
   
   })
 
