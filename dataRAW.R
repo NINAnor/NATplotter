@@ -50,9 +50,31 @@ counties <- counties %>%
                        "TrÃ¸ndelag" = "Trøndelag"))
 
 
+# remove old nature types
+# list all types
+keepers_pre <- unique(dat$naturtype)
+#Extract the year when these were mapped
+years <- NULL
+for(i in 1:length(keepers_pre)){
+  years[i] <- paste(sort(unique(dat$kartleggingsår[dat$naturtype == keepers_pre[i]])), collapse = ", ")
+}
+#Combine into one data frame
+keepers_df <- data.frame(
+  "Nature_type" = keepers_pre,
+  "Year"        = years
+)
+# find those mapped in 2021
+keepers <- keepers_df$Nature_type[grepl("2021" , keepers_df$Year)]
+# and cut the rest
+dat <- dat[dat$naturtype %in% keepers,]
+
+
+
+# get fylke  and region
+
 dat_counties <- st_intersection(dat, counties)
 unique(st_geometry_type(dat_counties)) # no lines introduced
-nrow(dat)-nrow(dat_counties)  # 38 new polygons mean 76 polygins were split between counties
+nrow(dat)-nrow(dat_counties)  # 30 new polygons means 60 polygons were split between counties
 
 dups <- dat_counties$identifikasjon_lokalid[duplicated(dat_counties$identifikasjon_lokalid)]
 dups2 <- dat_counties[dat_counties$identifikasjon_lokalid %in% dups,]
@@ -81,9 +103,21 @@ dat_counties_filtered_added <- bind_rows(dat_counties_filtered,
                                          to_add)
   
 
+
 #View(dat_counties_filtered_added[dat_counties_filtered_added$identifikasjon_lokalid %in% dups4$identifikasjon_lokalid, ])   #OK
 
+# rename
 dat <- dat_counties_filtered_added
+
+
+# Combine fylke into regions
+dat <- dat %>%
+  mutate(region =
+         case_when(fylke %in% c("Agder", "Vestfold og Telemark") ~ "Sørlandet",
+                   fylke %in% c("Oslo", "Innlandet", "Viken") ~ "Østlandet",
+                   fylke %in% c("Troms og Finnmark", "Nordland") ~ "NordNorge",
+                   fylke %in% c("Rogaland", "Vestland") ~ "Vestlandet",
+                   fylke %in% c("Møre og Romsdal", "Trøndelag") ~ "Midt-Norge"))
 
 dat$km2 <- drop_units(st_area(dat))/1000
 #unique(dat$tilstand)
@@ -126,17 +160,8 @@ dat2 <- dat %>%
                                  "Svært høy kvalitet" = "5 - Svært høy kvalitet"))
   
 
-unique(dat2$tilstand)
-
-# These one did not work for some reason, so doing it seperately
-dat2$tilstand[dat2$tilstand == "Dårlig"] <- "2 - Dårlig"
-dat2$tilstand[dat2$tilstand == "Svært redusert"] <- "1 - Svært redusert"
-
 
 #saveRDS(dat2, "shinyData/naturtyper.rds")
-
-
-unique(naturtyper$naturtype)
 
 
 

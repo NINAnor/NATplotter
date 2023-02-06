@@ -22,17 +22,20 @@ varList <- c("kartleggingsår",
              "tilstand", 
              "naturmangfold", 
              "lokalitetskvalitet", 
-             "mosaikk", 
-             "usikkerhet", 
              "hovedøkosystem", 
              "oppdragstaker",
+             "naturtype",
              "fylke",
+             "kommuner",
+             "mosaikk", 
+             "usikkerhet", 
              "uk_nærtruet",
              "uk_sentraløkosystemfunksjon",
              "uk_spesieltdårligkartlagt",
              "uk_truet")
 
-varList_special <- c("hovedøkosystem","oppdragstaker", "fylke")
+varList_special <- c("hovedøkosystem","oppdragstaker", "fylke", "kommuner", "naturtype")
+varList_special_trunkert <- c("oppdragstaker", "kommuner", "naturtype")
 
 
 ui <- 
@@ -46,22 +49,23 @@ ui <-
     tabPanel("Oversikt",
              sidebarLayout(
                sidebarPanel(width = 3,
-                            #pickerInput('y_axis_oversikt',
-                            #             'Hva vil du ha på y-aksen?',
-                            #             choices = c("Antall_lokaliteter", "Areal_km2"),
-                            #             selected = "Antall_lokaliteter"
-                            #             ),
                             pickerInput('x_axis_oversikt',
                                          'Hva vil du ha på x-aksen?',
                                          choices = varList,
-                                        selected = "kartleggingsår")
+                                        selected = "kartleggingsår"),
+                            radioGroupButtons(
+                              inputId = "sortBy",
+                              label = "(der relevant) Sorter y-axen etter:",
+                              choices = c("Antall_lokaliteter", "Areal_km2"),
+                              direction = "vertical")
                             ),
              mainPanel(width = 9,
                        tabsetPanel(
                          
                          tabPanel("Figur", 
                                   column(6,
-                                    plotOutput('years_count')),
+                                    plotOutput('years_count'),
+                                    textOutput('warning1')),
                                   column(6,
                                     plotOutput('years_area')),
                                   ),
@@ -135,7 +139,9 @@ server <- function(input, output, session) ({
   
   output$years_count <- renderPlot({
     dat_plot <- summary1()
-    if(input$x_axis_oversikt %in% varList_special) dat_plot <- dat_plot %>% mutate(myVar = fct_reorder(factor(myVar), Antall_lokaliteter))
+    if(input$x_axis_oversikt %in% varList_special) dat_plot <- dat_plot %>% mutate(myVar = fct_reorder(factor(myVar), !! rlang::sym(input$sortBy)))
+    if(input$x_axis_oversikt %in% varList_special_trunkert) dat_plot <- dat_plot %>% arrange(desc(Antall_lokaliteter)) %>% slice_head(n = 15)
+    
     gg_out <- ggplot(dat_plot, aes_string(x = "myVar", y = "Antall_lokaliteter"))+
       geom_bar(stat="identity",
                fill = "#FFCC99",
@@ -149,7 +155,8 @@ server <- function(input, output, session) ({
   
   output$years_area <- renderPlot({
     dat_plot <- summary1()
-    if(input$x_axis_oversikt %in% varList_special) dat_plot <- dat_plot %>% mutate(myVar = fct_reorder(factor(myVar), Antall_lokaliteter))
+    if(input$x_axis_oversikt %in% varList_special) dat_plot <- dat_plot %>% mutate(myVar = fct_reorder(factor(myVar), !! rlang::sym(input$sortBy)))
+    if(input$x_axis_oversikt %in% varList_special_trunkert) dat_plot <- dat_plot %>% arrange(desc(Antall_lokaliteter)) %>% slice_head(n = 15)
     gg_out <- ggplot(dat_plot, aes_string(x = "myVar", y = "Areal_km2"))+
       geom_bar(stat="identity",
                fill = "#FF9933",
@@ -161,6 +168,7 @@ server <- function(input, output, session) ({
     return(gg_out)
   })
   
+  output$warning1 <- renderText(if(input$x_axis_oversikt %in% varList_special_trunkert) "Kun de 15 vanligste grupperingene er vist (målt i antall lokaliteter)")
   
   output$years_tbl <- renderDT({
     summary1() %>%
