@@ -10,21 +10,12 @@ naturtyper <- NULL
 # function to read data with progress bar
 readData <- function(session, naturtyper) {
   progress <- Progress$new(session)
-  progress$set(value = 0, message = 'Loading data...')
+  progress$set(value = 0, message = 'Loading raw data...')
   naturtyper <<- readRDS("shinyData/naturtyper.rds")
   ntyper <<- unique(naturtyper$naturtype)
-  progress$set(value = 0.25, message = 'Melting data...')
-  # Melted data set
-  naturtyper_long <- tidyr::separate_rows(naturtyper, ninbeskrivelsesvariabler, sep=",") %>%
-    separate(col = ninbeskrivelsesvariabler,
-             into = c("NiN_variable_code", "NiN_variable_value"),
-             sep = "_",
-             remove=F) %>%
-    mutate(NiN_variable_value = as.numeric(NiN_variable_value)) %>%
-    filter(!str_detect(NiN_variable_code, "LKM"))
-  
-  
-  progress$set(value = 0.5, message = 'Melting data...')
+  progress$set(value = 0.25, message = 'Loading melted data...')
+  naturtyper_long <<- readRDS("shinyData/naturtyper_long.rds")
+  progress$set(value = 0.5, message = 'Loading melted data...')
   progress$close()
 }
 
@@ -94,7 +85,7 @@ ui <-
              
     # '-------------       
     # **TAB 2 ----
-    tabPanel("Naturtyper",
+    tabPanel("Naturtyper - enkel",
              sidebarLayout(
                sidebarPanel(width = 3,
                             pickerInput('naturtype',
@@ -104,15 +95,72 @@ ui <-
                                           `live-search` = TRUE))
                ),
                mainPanel(width = 9,
-                         column(6, 
-                            plotOutput('ntyp_years_count')
+                         tabsetPanel(
+                           tabPanel("Oversikt",
+                              fluidRow(p(strong("Variasjon over år")),),
+                              fluidRow(
+                                column(6, 
+                                       plotOutput('ntyp_years_count')
+                                       ),
+                                column(6,
+                                       plotOutput('ntyp_years_area')
+                                       )
+                              ),
+                              fluidRow(p(strong("Variasjon i tilstand")),),
+                              fluidRow(
+                                column(6, 
+                                       plotOutput('ntyp_tilstand_count')
                                 ),
-                         column(6,
-                            plotOutput('ntyp_years_area')
+                                column(6,
+                                       plotOutput('ntyp_tilstand_area')
                                 )
+                              ),
+                              fluidRow(p(strong("Variasjon i naturmangfold")),),
+                              fluidRow(
+                                column(6, 
+                                       plotOutput('ntyp_natur_count')
+                                ),
+                                column(6,
+                                       plotOutput('ntyp_natur_area')
+                                )
+                              ),
+                              fluidRow(p(strong("Variasjon i lokalitetskvalitet")),),
+                              fluidRow(
+                                column(6, 
+                                       plotOutput('ntyp_kvalitet_count')
+                                ),
+                                column(6,
+                                       plotOutput('ntyp_kvalitet_area')
+                                )
+                              ),
+                              fluidRow(p(strong("Variasjon i øvrige NiN-variabler")),),
+                              fluidRow(
+                                plotOutput('ntyp_vars',
+                                           height = "800px")
+                              )
+                           ),
+                           tabPanel("Tabell",
+                                    DTOutput('ntyp_tabell')
+                                    )
+                           )
                          )
                )
              ),
+    tabPanel("Naturtyper - utvalg",
+             sidebarLayout(
+               sidebarPanel(width=3
+                            ),
+               mainPanel(width = 9,
+                         tabsetPanel(
+                           tabPanel("Figur",
+                              fluidRow(p("Her kan du gjøre et enda mer detaljert utvalg for å lage akuratt den figuren du ønsker"),)
+                              ),
+                           tabPanel("Tabell",
+                              fluidRow(p("Her kan du gjøre et enda mer detaljert utvalg for å lage akuratt den figuren du ønsker"),)
+                              )
+                           )
+                         )
+             )),
 
 
     # '-------------             
@@ -202,9 +250,31 @@ server <- function(input, output, session) ({
                 Areal_km2 = round(sum(km2), 0))
   })
   
+  ntyp_selected_tilstand <- reactive({
+    naturtyper %>%
+      filter(naturtype == input$naturtype) %>%
+      group_by(tilstand) %>%
+      summarise(Antall_lokaliteter = n(),
+                Areal_km2 = round(sum(km2), 0))
+  })
   
- # ntyp_vars <- 
-
+  ntyp_selected_natur <- reactive({
+    naturtyper %>%
+      filter(naturtype == input$naturtype) %>%
+      group_by(naturmangfold) %>%
+      summarise(Antall_lokaliteter = n(),
+                Areal_km2 = round(sum(km2), 0))
+  })
+  
+  ntyp_selected_kvalitet <- reactive({
+    naturtyper %>%
+      filter(naturtype == input$naturtype) %>%
+      group_by(lokalitetskvalitet) %>%
+      summarise(Antall_lokaliteter = n(),
+                Areal_km2 = round(sum(km2), 0))
+  })
+  
+  
   output$ntyp_years_count <- renderPlot({
     gg_out <- ggplot(ntyp_selected(), aes(x = kartleggingsår, y = Antall_lokaliteter))+
       geom_bar(stat="identity",
@@ -225,21 +295,86 @@ server <- function(input, output, session) ({
     return(gg_out)
   })
   
- #output$ntyp_vars <- renderPlot({
- #  naturtyper_long %>% 
- #    filter(naturtype == input$naturtype) %>%
- #    group_by(NiN_variable_code) %>%
- #    summarise(Antall_lokaliteter = n(),
- #              Areal_km2 = round(sum(km2), 0)) %>%
- #  
- #  gg_out <- ggplot(ntyp_selected(), aes(x = kartleggingsår, y = Areal_km2))+
- #    geom_bar(stat="identity",
- #             fill = "#FF9933",
- #             colour = "grey20",
- #             linewidth=1.5)+
- #    theme_bw(base_size = 12)
- #  return(gg_out)
- #})
+  output$ntyp_tilstand_count <- renderPlot({
+    gg_out <- ggplot(ntyp_selected_tilstand(), aes(x = tilstand, y = Antall_lokaliteter))+
+      geom_bar(stat="identity",
+               fill = "#FFCC99",
+               colour = "grey20",
+               linewidth=1.5)+
+      theme_bw(base_size = 12)
+    return(gg_out)
+  })
+  
+  output$ntyp_tilstand_area <- renderPlot({
+    gg_out <- ggplot(ntyp_selected_tilstand(), aes(x = tilstand, y = Areal_km2))+
+      geom_bar(stat="identity",
+               fill = "#FF9933",
+               colour = "grey20",
+               linewidth=1.5)+
+      theme_bw(base_size = 12)
+    return(gg_out)
+  })
+  
+  output$ntyp_natur_count <- renderPlot({
+    gg_out <- ggplot(ntyp_selected_natur(), aes(x = naturmangfold, y = Antall_lokaliteter))+
+      geom_bar(stat="identity",
+               fill = "#FFCC99",
+               colour = "grey20",
+               linewidth=1.5)+
+      theme_bw(base_size = 12)
+    return(gg_out)
+  })
+  
+  output$ntyp_natur_area <- renderPlot({
+    gg_out <- ggplot(ntyp_selected_natur(), aes(x = naturmangfold, y = Areal_km2))+
+      geom_bar(stat="identity",
+               fill = "#FF9933",
+               colour = "grey20",
+               linewidth=1.5)+
+      theme_bw(base_size = 12)
+    return(gg_out)
+  })
+  
+  output$ntyp_kvalitet_count <- renderPlot({
+    gg_out <- ggplot(ntyp_selected_kvalitet(), aes(x = lokalitetskvalitet, y = Antall_lokaliteter))+
+      geom_bar(stat="identity",
+               fill = "#FFCC99",
+               colour = "grey20",
+               linewidth=1.5)+
+      theme_bw(base_size = 12)
+    return(gg_out)
+  })
+  
+  output$ntyp_natur_area <- renderPlot({
+    gg_out <- ggplot(ntyp_selected_kvalitet(), aes(x = lokalitetskvalitet, y = Areal_km2))+
+      geom_bar(stat="identity",
+               fill = "#FF9933",
+               colour = "grey20",
+               linewidth=1.5)+
+      theme_bw(base_size = 12)
+    return(gg_out)
+  })
+  
+  output$ntyp_tabell <- renderDT({
+    ntyp_selected() 
+  })
+  
+ output$ntyp_vars <- renderPlot({
+   naturtyper_long %>% 
+     filter(naturtype == input$naturtype) %>%
+     group_by(NiN_variable_code, NiN_variable_value) %>%
+     summarise(Antall_lokaliteter = n(),
+               Areal_km2 = round(sum(km2), 0)) %>%
+     ggplot(aes(x = NiN_variable_value, y = Antall_lokaliteter))+
+     geom_bar(stat="identity",
+              fill = "#FF9933",
+              colour = "grey20",
+              linewidth=1.5)+
+     theme_bw(base_size = 12)+
+     facet_wrap(.~NiN_variable_code,
+                scales = "free",
+                ncol = 3)
+ })
   
   })
 

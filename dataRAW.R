@@ -161,7 +161,21 @@ dat2 <- dat %>%
   
 
 
+# Melted data set
+# Get seperate rows for each nin variable
+dat2_long <- tidyr::separate_rows(dat2, ninbeskrivelsesvariabler, sep=",") %>%
+  separate(col = ninbeskrivelsesvariabler,
+           into = c("NiN_variable_code", "NiN_variable_value"),
+           sep = "_",
+           remove=F) %>%
+  mutate(NiN_variable_value = as.numeric(NiN_variable_value)) %>%
+  filter(!str_detect(NiN_variable_code, "LKM")) %>%
+  group_by(naturtype, NiN_variable_code, NiN_variable_value) %>%
+  filter(n() > 2) %>% ungroup()
+
+
 #saveRDS(dat2, "shinyData/naturtyper.rds")
+#saveRDS(dat2_long, "shinyData/naturtyper_long.rds")
 
 
 
