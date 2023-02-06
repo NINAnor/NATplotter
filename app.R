@@ -10,10 +10,21 @@ naturtyper <- NULL
 # function to read data with progress bar
 readData <- function(session, naturtyper) {
   progress <- Progress$new(session)
-  progress$set(value = 0, message = 'Loading...')
+  progress$set(value = 0, message = 'Loading data...')
   naturtyper <<- readRDS("shinyData/naturtyper.rds")
   ntyper <<- unique(naturtyper$naturtype)
-  progress$set(value = 0.25, message = 'Loading...')
+  progress$set(value = 0.25, message = 'Melting data...')
+  # Melted data set
+  naturtyper_long <- tidyr::separate_rows(naturtyper, ninbeskrivelsesvariabler, sep=",") %>%
+    separate(col = ninbeskrivelsesvariabler,
+             into = c("NiN_variable_code", "NiN_variable_value"),
+             sep = "_",
+             remove=F) %>%
+    mutate(NiN_variable_value = as.numeric(NiN_variable_value)) %>%
+    filter(!str_detect(NiN_variable_code, "LKM"))
+  
+  
+  progress$set(value = 0.5, message = 'Melting data...')
   progress$close()
 }
 
@@ -26,6 +37,7 @@ varList <- c("kartleggingsår",
              "oppdragstaker",
              "naturtype",
              "fylke",
+             "region",
              "kommuner",
              "mosaikk", 
              "usikkerhet", 
@@ -34,16 +46,19 @@ varList <- c("kartleggingsår",
              "uk_spesieltdårligkartlagt",
              "uk_truet")
 
-varList_special <- c("hovedøkosystem","oppdragstaker", "fylke", "kommuner", "naturtype")
+varList_special <- c("hovedøkosystem","oppdragstaker", "fylke", "kommuner", "naturtype", "region")
 varList_special_trunkert <- c("oppdragstaker", "kommuner", "naturtype")
+
+antall <- length(ntyper)
+antall_lok <- nrow((naturtyper))
+
+
 
 
 ui <- 
   navbarPage(
-    # add title and logos inside a div
     title = "Naturtyper etter Miljødirektoratets Instruks",
     
-  
     # '-------------       
     # **TAB 1 ----
     tabPanel("Oversikt",
@@ -56,9 +71,8 @@ ui <-
                             radioGroupButtons(
                               inputId = "sortBy",
                               label = "(der relevant) Sorter y-axen etter:",
-                              choices = c("Antall_lokaliteter", "Areal_km2"),
-                              direction = "vertical")
-                            ),
+                              choices = c("Antall_lokaliteter", "Areal_km2")
+                            )),
              mainPanel(width = 9,
                        tabsetPanel(
                          
@@ -103,15 +117,18 @@ ui <-
 
     # '-------------             
     # **TAB More ----
-    navbarMenu("More",
+    navbarMenu("Mer",
                
                # Instructions----
-               tabPanel("Contact",
-                        p("This app was developed by  ", tags$a(href="https://github.com/anders-kolstad/", target='_blank', "Anders L. Kolstad.")),
-                        
-                        p("...",style = "width: 500px;")
+               tabPanel("Contakt",
+                        p("Denne appen er laget av  ", tags$a(href="https://github.com/anders-kolstad/", target='_blank', "Anders L. Kolstad."))),
+               tabPanel('Informasjon',
+                        p("See ", tags$a(href="https://github.com/NINAnor/naturtypedata/blob/main/dataRAW.R", target='_blank', "her"), " for detaljer om hvordan datasettet er tilrettelagt.
+                          Datasettet består av", antall, "naturtyper som er kartlagt etter Miljødirekatoratets instruks senest i 2021. Dette utgjør", antall_lok, "lokaliteter. Kartleggingsinstruksen inneholder 111 natutyper i 2021 (og 2022). Det er antatt at de resterende typene so ikke finnes i dette datasettet gjelder typer som  kartlegges med fjernmåling, eller som ikke er påmøtt i felt enda. Dette bør undersøkes og evt bekreftes." )
                         )
                )
+                        
+               
     )
     
 
@@ -185,6 +202,8 @@ server <- function(input, output, session) ({
                 Areal_km2 = round(sum(km2), 0))
   })
   
+  
+ # ntyp_vars <- 
 
   output$ntyp_years_count <- renderPlot({
     gg_out <- ggplot(ntyp_selected(), aes(x = kartleggingsår, y = Antall_lokaliteter))+
@@ -205,6 +224,22 @@ server <- function(input, output, session) ({
       theme_bw(base_size = 12)
     return(gg_out)
   })
+  
+ #output$ntyp_vars <- renderPlot({
+ #  naturtyper_long %>% 
+ #    filter(naturtype == input$naturtype) %>%
+ #    group_by(NiN_variable_code) %>%
+ #    summarise(Antall_lokaliteter = n(),
+ #              Areal_km2 = round(sum(km2), 0)) %>%
+ #  
+ #  gg_out <- ggplot(ntyp_selected(), aes(x = kartleggingsår, y = Areal_km2))+
+ #    geom_bar(stat="identity",
+ #             fill = "#FF9933",
+ #             colour = "grey20",
+ #             linewidth=1.5)+
+ #    theme_bw(base_size = 12)
+ #  return(gg_out)
+ #})
   
   })
 

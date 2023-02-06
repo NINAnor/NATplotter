@@ -59,6 +59,83 @@ naturtyper %>%
       filter(naturtype == "Naturbeitemark") %>%
       group_by(kartleggingsår) %>%
       summarise(Antall_lokaliteter = n(),
-                Areal_km2 = round(sum(km2), 0))
+                Areal_km2 = round(sum(km2), 0)) 
 ```
+
+```{r}
+temp <- naturtyper_long %>% filter(naturtype == "Naturbeitemark") %>%
+  group_by(NiN_variable_code, NiN_variable_value) %>%
+      summarise(Antall_lokaliteter = n(),
+                Areal_km2 = round(sum(km2), 0))
+
+temp2 <- temp %>%
+  group_by(NiN_variable_code) %>%
+  summarise(lokaliter = sum(Antall_lokaliteter)) %>%
+  filter(lokaliter > 2)
+
+temp3 <- temp %>%
+  filter(NiN_variable_code %in% temp2$NiN_variable_code)
+  
+  
+ggplot(temp3, aes(x = NiN_variable_value, y = Antall_lokaliteter))+
+  geom_bar(stat="identity",
+               fill = "#FF9933",
+               colour = "grey20",
+               linewidth=1.5)+
+      theme_bw(base_size = 12)+
+  facet_wrap(.~NiN_variable_code,
+             scales = "free",
+             ncol = 3)
+```
+
+
+```{r}
+ggplot(temp3[temp3$NiN_variable_code=="PRHA",], aes(x = NiN_variable_value, y = Antall_lokaliteter))+
+  geom_bar(stat="identity",
+               fill = "#FF9933",
+               colour = "grey20",
+               linewidth=1.5)+
+      theme_bw(base_size = 12)
+```
+```
+
+```{r}
+temp2 <- temp %>%
+  group_by(tilstand) %>%
+  summarise(n = n())
+```
+
+```{r}
+ggplot(temp, aes(x = tilstand, y = n))+
+  geom_bar(stat = "identity")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
