@@ -150,7 +150,7 @@ ui <-
                          )
                )
              ),
-    tabPanel("Naturtyper - utvalg",
+    tabPanel("Naturtyper - NiN-variabler",
              sidebarLayout(
                sidebarPanel(width=3,
                             pickerInput('naturtype2',
@@ -405,9 +405,21 @@ server <- function(input, output, session) ({
    naturtyper_long %>% 
      filter(naturtype == input$naturtype2)
  })
+
+ # A reactive list of possible variables to look at for each naturtype
+ observeEvent(input$naturtype2, {
+   updatePickerInput(session = session, inputId = "variable1",
+                     choices = unique(naturtyper_long_selected2()$NiN_variable_code)) # c(varList, unique(naturtyper_long_selected2()$NiN_variable_code)))
+ })
  
  naturtyper_long_selected_var <- reactive({
-   naturtyper_long_selected2() %>%
+  # dat1 <- naturtyper %>%
+  #   filter(naturtype == input$naturtype2) %>%
+  #   bind_rows(naturtyper_long_selected2()) %>%
+     
+     # Her vil jeg slå sammen naturtyper og naturtyper_long_selected2(). Kolonnene i naturtyper som også finnes i varList på smeltes og legges i samme kolonne som NiN_variable_code
+
+   dat2 <- naturtyper_long_selected2() %>%
      filter(NiN_variable_code == input$variable1) %>%
      group_by(NiN_variable_code, NiN_variable_value) %>%
      { if(!input$myFacet %in% "Ingen") group_by(., !!rlang::sym(input$myFacet), .add=T) else . } %>%
@@ -415,11 +427,6 @@ server <- function(input, output, session) ({
                Areal_km2 = round(sum(km2), 0))
  })
    
-# A reactive list of possible variables to look at for each naturtype
- observeEvent(input$naturtype2, {
-   updatePickerInput(session = session, inputId = "variable1",
-                     choices = unique(naturtyper_long_selected2()$NiN_variable_code))
- })
  
  ## A reactive list of possible facet variables
  #observeEvent(input$variable1, {
