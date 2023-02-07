@@ -46,7 +46,7 @@ varList_special_trunkert <- c("oppdragstaker", "kommuner", "naturtype")
 antall <- length(ntyper)
 antall_lok <- nrow((naturtyper))
 
-
+myBase_size <- 20
 
 
 ui <- 
@@ -169,10 +169,12 @@ ui <-
                             #              `live-search` = TRUE))
                             ),
                mainPanel(width = 9,
-                         fluidRow(p("Her kan du gjøre et enda mer detaljert utvalg for å lage akuratt den figuren du ønsker"),),
+                         fluidRow(p("Her kan du gjøre et enda mer detaljert utvalg for å lage akkurat den figuren du ønsker"),),
                          tabsetPanel(
-                           tabPanel("Figur"),
-                           tabPanel("Tabell")
+                           tabPanel("Figur",
+                                    plotOutput('ntyp_utvalg')),
+                           tabPanel("Tabell",
+                                    DTOutput('ntyp_utvalg_table'))
                            )
                          )
              )),
@@ -227,7 +229,7 @@ server <- function(input, output, session) ({
                fill = "#FFCC99",
                colour = "grey20",
                linewidth=1.5)+
-      theme_bw(base_size = 12)+
+      theme_bw(base_size = myBase_size)+
       xlab(input$x_axis_oversikt)
     if(input$x_axis_oversikt %in% varList_special) gg_out <- gg_out + coord_flip()
     return(gg_out)
@@ -242,7 +244,7 @@ server <- function(input, output, session) ({
                fill = "#FF9933",
                colour = "grey20",
                linewidth=1.5)+
-      theme_bw(base_size = 12)+
+      theme_bw(base_size = myBase_size)+
       xlab(input$x_axis_oversikt)
     if(input$x_axis_oversikt %in% varList_special) gg_out <- gg_out + coord_flip()
     return(gg_out)
@@ -296,7 +298,7 @@ server <- function(input, output, session) ({
                fill = "#FFCC99",
                colour = "grey20",
                linewidth=1.5)+
-      theme_bw(base_size = 12)
+      theme_bw(base_size = myBase_size)
     return(gg_out)
   })
   
@@ -306,7 +308,7 @@ server <- function(input, output, session) ({
                fill = "#FF9933",
                colour = "grey20",
                linewidth=1.5)+
-      theme_bw(base_size = 12)
+      theme_bw(base_size = myBase_size)
     return(gg_out)
   })
   
@@ -316,7 +318,7 @@ server <- function(input, output, session) ({
                fill = "#FFCC99",
                colour = "grey20",
                linewidth=1.5)+
-      theme_bw(base_size = 12)
+      theme_bw(base_size = myBase_size)
     return(gg_out)
   })
   
@@ -326,7 +328,7 @@ server <- function(input, output, session) ({
                fill = "#FF9933",
                colour = "grey20",
                linewidth=1.5)+
-      theme_bw(base_size = 12)
+      theme_bw(base_size = myBase_size)
     return(gg_out)
   })
   
@@ -336,7 +338,7 @@ server <- function(input, output, session) ({
                fill = "#FFCC99",
                colour = "grey20",
                linewidth=1.5)+
-      theme_bw(base_size = 12)
+      theme_bw(base_size = myBase_size)
     return(gg_out)
   })
   
@@ -346,7 +348,7 @@ server <- function(input, output, session) ({
                fill = "#FF9933",
                colour = "grey20",
                linewidth=1.5)+
-      theme_bw(base_size = 12)
+      theme_bw(base_size = myBase_size)
     return(gg_out)
   })
   
@@ -356,17 +358,17 @@ server <- function(input, output, session) ({
                fill = "#FFCC99",
                colour = "grey20",
                linewidth=1.5)+
-      theme_bw(base_size = 12)
+      theme_bw(base_size = myBase_size)
     return(gg_out)
   })
   
-  output$ntyp_natur_area <- renderPlot({
+  output$ntyp_kvalitet_area <- renderPlot({
     gg_out <- ggplot(ntyp_selected_kvalitet(), aes(x = lokalitetskvalitet, y = Areal_km2))+
       geom_bar(stat="identity",
                fill = "#FF9933",
                colour = "grey20",
                linewidth=1.5)+
-      theme_bw(base_size = 12)
+      theme_bw(base_size = myBase_size)
     return(gg_out)
   })
   
@@ -382,10 +384,10 @@ server <- function(input, output, session) ({
                Areal_km2 = round(sum(km2), 0)) %>%
      ggplot(aes(x = NiN_variable_value, y = Antall_lokaliteter))+
      geom_bar(stat="identity",
-              fill = "#FF9933",
+              fill = "#FFCC99",
               colour = "grey20",
               linewidth=1.5)+
-     theme_bw(base_size = 12)+
+     theme_bw(base_size = myBase_size)+
      facet_wrap(.~NiN_variable_code,
                 scales = "free",
                 ncol = 3)
@@ -397,30 +399,36 @@ server <- function(input, output, session) ({
      filter(naturtype == input$naturtype2)
  })
  
+ naturtyper_long_selected_var <- reactive({
+   naturtyper_long_selected2() %>%
+     filter(NiN_variable_code == input$variable1) %>%
+     group_by(NiN_variable_code, NiN_variable_value) %>%
+     summarise(Antall_lokaliteter = n(),
+               Areal_km2 = round(sum(km2), 0))
+ })
+   
 # A reactive list of possible variables to look at for each naturtype
  observeEvent(input$naturtype2, {
    updatePickerInput(session = session, inputId = "variable1",
                      choices = unique(naturtyper_long_selected2()$NiN_variable_code))
  })
  
-#output$ntyp_utvalg <- renderPlot({
-#  naturtyper_long %>% 
-#    filter(naturtype == input$naturtype) %>%
-#    group_by(NiN_variable_code, NiN_variable_value) %>%
-#    summarise(Antall_lokaliteter = n(),
-#              Areal_km2 = round(sum(km2), 0)) %>%
-#    ggplot(aes(x = NiN_variable_value, y = Antall_lokaliteter))+
-#    geom_bar(stat="identity",
-#             fill = "#FF9933",
-#             colour = "grey20",
-#             linewidth=1.5)+
-#    theme_bw(base_size = 12)+
-#    facet_wrap(.~NiN_variable_code,
-#               scales = "free",
-#               ncol = 3)
-#})
+output$ntyp_utvalg <- renderPlot({
+  naturtyper_long_selected_var() %>%
+    ggplot(aes(x = NiN_variable_value, y = Antall_lokaliteter))+
+    geom_bar(stat="identity",
+             fill = "#FF9933",
+             colour = "grey20",
+             linewidth=1.5)+
+    theme_bw(base_size = myBase_size)+
+    xlab(input$variable1)
+})
   
+output$ntyp_utvalg_table <- renderDT({
+  naturtyper_long_selected_var()
   })
+
+})
 
 
 shinyApp(ui = ui, server = server)

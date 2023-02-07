@@ -88,7 +88,7 @@ ggplot(temp[temp$NiN_variable_code=="PRHA",], aes(x = NiN_variable_value, y = An
                linewidth=1.5)+
       theme_bw(base_size = 12)
 ```
-```
+
 
 ```{r}
 temp2 <- temp %>%
@@ -103,6 +103,15 @@ ggplot(temp, aes(x = tilstand, y = n))+
 
 
 
+```{r}
+naturtyper_long_selected_var <- 
+   naturtyper_long %>% 
+     filter(naturtype == "Naturbeitemark") %>%
+     filter(NiN_variable_code == "PRRL-EN") %>%
+     group_by(NiN_variable_code, NiN_variable_value) %>%
+     summarise(Antall_lokaliteter = n(),
+               Areal_km2 = round(sum(km2), 0))
+```
 
 
 
