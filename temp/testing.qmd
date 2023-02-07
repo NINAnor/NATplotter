@@ -104,15 +104,26 @@ ggplot(temp, aes(x = tilstand, y = n))+
 
 
 ```{r}
+cond <- TRUE
 naturtyper_long_selected_var <- 
    naturtyper_long %>% 
      filter(naturtype == "Naturbeitemark") %>%
      filter(NiN_variable_code == "PRRL-EN") %>%
      group_by(NiN_variable_code, NiN_variable_value) %>%
+     { if (cond) group_by(., kartleggingsår, .add=T) else . } %>%
      summarise(Antall_lokaliteter = n(),
                Areal_km2 = round(sum(km2), 0))
 ```
 
+```{r}
+ggplot(naturtyper_long_selected_var, aes(x = NiN_variable_value, y = Antall_lokaliteter))+
+    geom_bar(stat="identity",
+             fill = "#FF9933",
+             colour = "grey20",
+             linewidth=1.5)+
+    theme_bw(base_size = myBase_size) +
+  facet_grid(vars(kartleggingsår))
+```
 
 
 

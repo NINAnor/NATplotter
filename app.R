@@ -40,11 +40,11 @@ varList <- c("kartleggingsår",
 
 
 
+
 varList_special <- c("hovedøkosystem","oppdragstaker", "fylke", "kommuner", "naturtype", "region")
 varList_special_trunkert <- c("oppdragstaker", "kommuner", "naturtype")
 
-antall <- length(ntyper)
-antall_lok <- nrow((naturtyper))
+
 
 myBase_size <- 20
 
@@ -66,7 +66,8 @@ ui <-
                               inputId = "sortBy",
                               label = "(der relevant) Sorter y-axen etter:",
                               choices = c("Antall_lokaliteter", "Areal_km2")
-                            )),
+                             )
+                            ),
              mainPanel(width = 9,
                        tabsetPanel(
                          
@@ -158,21 +159,28 @@ ui <-
                                         options = list(
                                           `live-search` = TRUE)),
                             pickerInput('variable1',
-                                        "Velg variabel",
+                                        "NiN-variabel",
                                         choices = NULL,
                                         options = list(
-                                          `live-search` = TRUE))
-                            #pickerInput('myFacet',
-                            #            "Velg evt. gruppering",
-                            #            choices = varList2,
-                            #            options = list(
-                            #              `live-search` = TRUE))
+                                          `live-search` = TRUE)),
+                            pickerInput('myFacet',
+                                        "Velg evt. gruppering",
+                                        choices = c("Ingen", varList),
+                                        options = list(
+                                          `live-search` = TRUE)),
+                            numericInput("ncols", "Antall kolonner", value = 2, min = 1, max = 4),
+                            radioGroupButtons(
+                              inputId = "yaxis",
+                              label = "Hva skal y-aksen vise?",
+                              choices = c("Antall_lokaliteter", "Areal_km2")
+                            )
                             ),
                mainPanel(width = 9,
                          fluidRow(p("Her kan du gjøre et enda mer detaljert utvalg for å lage akkurat den figuren du ønsker"),),
                          tabsetPanel(
                            tabPanel("Figur",
-                                    plotOutput('ntyp_utvalg')),
+                                    plotOutput('ntyp_utvalg',
+                                               height = "800px")),
                            tabPanel("Tabell",
                                     DTOutput('ntyp_utvalg_table'))
                            )
@@ -188,8 +196,7 @@ ui <-
                tabPanel("Contakt",
                         p("Denne appen er laget av  ", tags$a(href="https://github.com/anders-kolstad/", target='_blank', "Anders L. Kolstad."))),
                tabPanel('Informasjon',
-                        p("See ", tags$a(href="https://github.com/NINAnor/naturtypedata/blob/main/dataRAW.R", target='_blank', "her"), " for detaljer om hvordan datasettet er tilrettelagt.
-                          Datasettet består av", antall, "naturtyper som er kartlagt etter Miljødirekatoratets instruks senest i 2021. Dette utgjør", antall_lok, "lokaliteter. Kartleggingsinstruksen inneholder 111 natutyper i 2021 (og 2022). Det er antatt at de resterende typene so ikke finnes i dette datasettet gjelder typer som  kartlegges med fjernmåling, eller som ikke er påmøtt i felt enda. Dette bør undersøkes og evt bekreftes." )
+                        uiOutput('info')
                         )
                )
                         
@@ -403,6 +410,7 @@ server <- function(input, output, session) ({
    naturtyper_long_selected2() %>%
      filter(NiN_variable_code == input$variable1) %>%
      group_by(NiN_variable_code, NiN_variable_value) %>%
+     { if(!input$myFacet %in% "Ingen") group_by(., !!rlang::sym(input$myFacet), .add=T) else . } %>%
      summarise(Antall_lokaliteter = n(),
                Areal_km2 = round(sum(km2), 0))
  })
@@ -413,22 +421,41 @@ server <- function(input, output, session) ({
                      choices = unique(naturtyper_long_selected2()$NiN_variable_code))
  })
  
+ ## A reactive list of possible facet variables
+ #observeEvent(input$variable1, {
+ #  updatePickerInput(session = session, inputId = "myFacet",
+ #                    choices = varList[!varList %in% input$variable1])
+ #})
+ 
 output$ntyp_utvalg <- renderPlot({
-  naturtyper_long_selected_var() %>%
-    ggplot(aes(x = NiN_variable_value, y = Antall_lokaliteter))+
+  out <- naturtyper_long_selected_var() %>%
+    ggplot(aes_string(x = "NiN_variable_value", y = input$yaxis))+
     geom_bar(stat="identity",
-             fill = "#FF9933",
+             fill = if_else(input$yaxis == "Antall_lokaliteter", "#FFCC99", "#FF9933"),
              colour = "grey20",
              linewidth=1.5)+
     theme_bw(base_size = myBase_size)+
     xlab(input$variable1)
+  if(input$myFacet != "Ingen") out <- out +
+      facet_wrap(.~get(input$myFacet),
+                 ncol = input$ncols)
+  return(out)
 })
   
 output$ntyp_utvalg_table <- renderDT({
   naturtyper_long_selected_var()
   })
 
+output$info <- renderUI({
+  antall <- length(ntyper)
+  antall_lok <- nrow(naturtyper)
+  tagList(
+  p("See ", tags$a(href="https://github.com/NINAnor/naturtypedata/blob/main/dataRAW.R", target='_blank', "her"), " for detaljer om hvordan datasettet er tilrettelagt. Datasettet består av", antall, "naturtyper som er kartlagt etter Miljødirekatoratets instruks senest i 2021. Dette utgjør", antall_lok, "lokaliteter. Kartleggingsinstruksen inneholder 111 natutyper i 2021 (og 2022). Det er antatt at de resterende typene so ikke finnes i dette datasettet gjelder typer som  kartlegges med fjernmåling, eller som ikke er påmøtt i felt enda. Dette bør undersøkes og evt bekreftes." )
+  )
 })
+
+})
+
 
 
 shinyApp(ui = ui, server = server)
