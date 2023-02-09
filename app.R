@@ -92,11 +92,7 @@ ui <-
     tabPanel("Naturtyper - enkel",
              sidebarLayout(
                sidebarPanel(width = 3,
-                            pickerInput('naturtype',
-                                        "Velg naturtype",
-                                        choices = ntyper,
-                                        options = list(
-                                          `live-search` = TRUE))
+                            uiOutput('pickNaturtype'),
                ),
                mainPanel(width = 9,
                          tabsetPanel(
@@ -153,11 +149,7 @@ ui <-
     tabPanel("Naturtyper - NiN-variabler",
              sidebarLayout(
                sidebarPanel(width=3,
-                            pickerInput('naturtype2',
-                                        "Velg naturtype",
-                                        choices = ntyper,
-                                        options = list(
-                                          `live-search` = TRUE)),
+                            uiOutput('pickNaturtype2'),
                             pickerInput('variable1',
                                         "NiN-variabel",
                                         choices = NULL,
@@ -461,6 +453,25 @@ output$info <- renderUI({
   )
 })
 
+output$pickNaturtype <- renderUI({
+  tagList(
+    pickerInput('naturtype',
+                "Velg naturtype",
+                choices = ntyper,
+                options = list(
+                  `live-search` = TRUE))
+  )
+})
+
+output$pickNaturtype2 <- renderUI({
+  tagList(
+    pickerInput('naturtype2',
+                "Velg naturtype",
+                choices = ntyper,
+                options = list(
+                  `live-search` = TRUE))
+    )
+  })
 })
 
 
