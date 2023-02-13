@@ -401,22 +401,44 @@ server <- function(input, output, session) ({
  # A reactive list of possible variables to look at for each naturtype
  observeEvent(input$naturtype2, {
    updatePickerInput(session = session, inputId = "variable1",
-                     choices = unique(naturtyper_long_selected2()$NiN_variable_code)) # c(varList, unique(naturtyper_long_selected2()$NiN_variable_code)))
+                     choices = c(varList, 
+                                 unique(naturtyper_long_selected2()$NiN_variable_code))) 
  })
  
+ 
+ # Bind long data with normal data to get all possible variables in same column
  naturtyper_long_selected_var <- reactive({
-  # dat1 <- naturtyper %>%
-  #   filter(naturtype == input$naturtype2) %>%
-  #   bind_rows(naturtyper_long_selected2()) %>%
-     
-     # Her vil jeg slå sammen naturtyper og naturtyper_long_selected2(). Kolonnene i naturtyper som også finnes i varList på smeltes og legges i samme kolonne som NiN_variable_code
+   
+   if(input$variable1 %in% varList) {
+     out_dat <- naturtyper %>%
+       filter(naturtype == input$naturtype2)
+   } else {
+     out_dat <- naturtyper_long_selected2()
+   }
+   
+   # Stop here
+   
+   #bind1 <- naturtyper_long_selected2() %>%
+   #  mutate(variable = NiN_variable_code,
+   #         value = as.character(NiN_variable_value))
+   #
+   #dat1 <- naturtyper %>%
+   #  filter(naturtype == input$naturtype2) %>%
+   #  pivot_longer(cols = varList,
+   #              names_to = "variable",
+   #              values_to = "value") %>%
+   #  bind_rows(bind1)
 
-   dat2 <- naturtyper_long_selected2() %>%
-     filter(NiN_variable_code == input$variable1) %>%
-     group_by(NiN_variable_code, NiN_variable_value) %>%
-     { if(!input$myFacet %in% "Ingen") group_by(., !!rlang::sym(input$myFacet), .add=T) else . } %>%
+   dat2 <- dat1 %>%
+     filter(variable == input$variable1 | variable == input$myFacet) %>%  
+     group_by(variable, value) %>%
+    #  { if(!input$myFacet %in% "Ingen") group_by(., !!rlang::sym(input$myFacet), .add=T) else . } %>%
      summarise(Antall_lokaliteter = n(),
                Areal_km2 = round(sum(km2), 0))
+   
+   if(input$variable1 %in% varList_special) dat2 <- dat2 %>% mutate(variable = fct_reorder(factor(variable), !! rlang::sym(input$yaxis)))
+   if(input$variable1 %in% varList_special_trunkert) dat2 <- dat2 %>% arrange(desc(Antall_lokaliteter)) %>% slice_head(n = 15)
+    
  })
    
  
@@ -428,16 +450,18 @@ server <- function(input, output, session) ({
  
 output$ntyp_utvalg <- renderPlot({
   out <- naturtyper_long_selected_var() %>%
-    ggplot(aes_string(x = "NiN_variable_value", y = input$yaxis))+
+    ggplot(aes_string(x = "value", y = input$yaxis))+
     geom_bar(stat="identity",
              fill = if_else(input$yaxis == "Antall_lokaliteter", "#FFCC99", "#FF9933"),
              colour = "grey20",
              linewidth=1.5)+
     theme_bw(base_size = myBase_size)+
     xlab(input$variable1)
-  if(input$myFacet != "Ingen") out <- out +
+  if(input$myFacet != "Ingen") {
+    out <- out +
       facet_wrap(.~get(input$myFacet),
                  ncol = input$ncols)
+  }
   return(out)
 })
   
