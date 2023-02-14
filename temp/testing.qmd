@@ -231,6 +231,20 @@ temp <- tempdat %>%
 
 
 
+```{r}
+get_code <- naturtyper %>%
+  filter(grepl("ntyp", naturtypekode)) %>%
+  distinct(naturtype, .keep_all = T) %>%
+  mutate(naturtypekode_short = str_remove(naturtypekode, "ntyp_")) %>%
+  select(naturtypekode_short, naturtype)
+
+naturtyper <- naturtyper %>%
+  left_join(get_code, by = "naturtype") %>%
+  mutate(naturtype = paste(naturtypekode_short, naturtype))
+
+
+sort(unique(naturtyper$naturtype))
+```
 
 
 

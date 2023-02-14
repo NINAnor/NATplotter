@@ -10,16 +10,34 @@ naturtyper <- NULL
 # function to read data with progress bar
 readData <- function(session, naturtyper) {
   progress <- Progress$new(session)
+  
   progress$set(value = 0, message = 'Loading raw data...')
   naturtyper <<- readRDS("shinyData/naturtyper.rds")
-  ntyper <<- unique(naturtyper$naturtype)
+
   progress$set(value = 0.25, message = 'Loading melted data...')
   naturtyper_long <<- readRDS("shinyData/naturtyper_long.rds")
+  
   progress$set(value = 0.5, message = 'Preparing data...')
+  # Add month
   naturtyper_long <<- naturtyper_long %>%
     mutate("måned" = substr(kartleggingsdato, 5, 6))
   naturtyper <<- naturtyper %>%
     mutate("måned" = substr(kartleggingsdato, 5, 6))
+  
+  # Add natur type code
+  get_code <<- naturtyper %>%
+    filter(grepl("ntyp", naturtypekode)) %>%
+    distinct(naturtype, .keep_all = T) %>%
+    mutate(naturtypekode_short = str_remove(naturtypekode, "ntyp_")) %>%
+    select(naturtypekode_short, naturtype)
+  naturtyper <<- naturtyper %>%
+    left_join(get_code, by = "naturtype") %>%
+    mutate(naturtype_temp = paste(naturtypekode_short, naturtype, sep = "_"),
+           naturtype = paste(naturtypekode_short, naturtype, sep = "_"))
+  naturtyper_long <<- naturtyper_long %>%
+    left_join(get_code, by = "naturtype") %>%
+    mutate(naturtype = paste(naturtypekode_short, naturtype, sep = "_"))
+  
   progress$close()
 }
 
@@ -213,7 +231,7 @@ ui <-
                
                # Instructions----
                tabPanel("Contakt",
-                        p("Denne appen er laget av  ", tags$a(href="https://github.com/anders-kolstad/", target='_blank', "Anders L. Kolstad ved NINA, Trondheim"))),
+                        p("Denne appen er laget av  ", tags$a(href="https://github.com/anders-kolstad/", target='_blank', "Anders L. Kolstad"), "ved NINA, Trondheim")),
                tabPanel('Informasjon',
                         uiOutput('info')
                         )
@@ -517,7 +535,7 @@ output$ntyp_utvalg_table <- renderDT({
   })
 
 output$info <- renderUI({
-  antall <- length(ntyper)
+  antall <- length(unique(naturtyper$naturtype_temp))
   antall_lok <- nrow(naturtyper)
   tagList(
     p("Denne appen har som hensikt å gjøre det lettere å undersøke datasettet Naturtyper etter Miljødirektoratets Instruks, spesielt med tanke på fordelingen av feltregistrerte variabler og aggregterte tilstand- eller kvalitetsvariabler på tvers av romlig og tidsmessig variasjon."),
@@ -529,7 +547,7 @@ output$pickNaturtype <- renderUI({
   tagList(
     pickerInput('naturtype',
                 "Velg naturtype",
-                choices = ntyper,
+                choices = sort(unique(naturtyper$naturtype_temp)),
                 options = list(
                   `live-search` = TRUE))
   )
@@ -539,7 +557,7 @@ output$pickNaturtype2 <- renderUI({
   tagList(
     pickerInput('naturtype2',
                 "Velg naturtype",
-                choices = ntyper,
+                choices = sort(unique(naturtyper$naturtype_temp)),
                 options = list(
                   `live-search` = TRUE))
     )
