@@ -60,6 +60,25 @@ varList <- c("kartleggingsår",
              "uk_spesieltdårligkartlagt",
              "uk_truet")
 
+varList_noMonth <- c("kartleggingsår",
+             #"måned",
+             "tilstand", 
+             "naturmangfold", 
+             "lokalitetskvalitet", 
+             "hovedøkosystem", 
+             "oppdragstaker",
+             "naturtype",
+             "fylke",
+             "region",
+             "kommuner",
+             "mosaikk", 
+             "usikkerhet", 
+             "uk_nærtruet",
+             "uk_sentraløkosystemfunksjon",
+             "uk_spesieltdårligkartlagt",
+             "uk_truet")
+
+
 varList2 <- c("kartleggingsår",
               "måned",
              "tilstand", 
@@ -92,11 +111,11 @@ ui <-
                sidebarPanel(width = 3,
                             pickerInput('x_axis_oversikt',
                                          'Hva vil du ha på x-aksen?',
-                                         choices = varList,
+                                         choices = varList_noMonth,
                                         selected = "kartleggingsår"),
                             radioGroupButtons(
                               inputId = "sortBy",
-                              label = "(der relevant) Sorter y-axen etter:",
+                              label = "Der relevant, sorter x-axen etter:",
                               choices = c("Antall_lokaliteter", "Areal_km2")
                              )
                             ),
@@ -258,10 +277,11 @@ server <- function(input, output, session) ({
   
   
   # OVERSIKT TAB
-  summary1 <- reactive({naturtyper %>%
-                          group_by(myVar = !! rlang::sym(input$x_axis_oversikt)) %>%
-                          summarise(Antall_lokaliteter = n(),
-                                    Areal_km2 = round(sum(km2), 0)) })
+  summary1 <- reactive({
+    naturtyper %>%
+      group_by(myVar = !! rlang::sym(input$x_axis_oversikt)) %>%
+      summarise(Antall_lokaliteter = n(),
+                Areal_km2 = round(sum(km2), 0)) })
   
   output$years_count <- renderPlot({
     dat_plot <- summary1()
