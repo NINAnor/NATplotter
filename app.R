@@ -15,12 +15,17 @@ readData <- function(session, naturtyper) {
   ntyper <<- unique(naturtyper$naturtype)
   progress$set(value = 0.25, message = 'Loading melted data...')
   naturtyper_long <<- readRDS("shinyData/naturtyper_long.rds")
-  progress$set(value = 0.5, message = 'Loading melted data...')
+  progress$set(value = 0.5, message = 'Preparing data...')
+  naturtyper_long <<- naturtyper_long %>%
+    mutate("måned" = substr(kartleggingsdato, 5, 6))
+  naturtyper <<- naturtyper %>%
+    mutate("måned" = substr(kartleggingsdato, 5, 6))
   progress$close()
 }
 
 
-varList <- c("kartleggingsår", 
+varList <- c("kartleggingsår",
+             "måned",
              "tilstand", 
              "naturmangfold", 
              "lokalitetskvalitet", 
@@ -37,7 +42,8 @@ varList <- c("kartleggingsår",
              "uk_spesieltdårligkartlagt",
              "uk_truet")
 
-varList2 <- c("kartleggingsår", 
+varList2 <- c("kartleggingsår",
+              "måned",
              "tilstand", 
              "naturmangfold", 
              "lokalitetskvalitet", 
