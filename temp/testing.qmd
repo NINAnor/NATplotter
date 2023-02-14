@@ -125,10 +125,57 @@ ggplot(naturtyper_long_selected_var, aes(x = NiN_variable_value, y = Antall_loka
   facet_grid(vars(kartleggingsår))
 ```
 
+```{r}
+x1 <- "kartleggingsår"
+x2 <- "7FA"
+```
+
+
+```{r}
+temp <- naturtyper_long %>%
+  filter(naturtype == "Naturbeitemark") %>%
+  { if( !x1 %in% varList2) {
+     filter(., NiN_variable_code == x2) %>%
+     pivot_wider(., id_cols = identifikasjon_lokalid,
+                                       names_from = NiN_variable_code,
+                                       values_from = NiN_variable_value)
+  } else { select(., identifikasjon_lokalid, km2, x1) %>%
+      distinct(., identifikasjon_lokalid, .keep_all = T)}}
+
+
+temp2 <- naturtyper_long %>%
+  filter(naturtype == "Naturbeitemark") %>%
+  { if( !x2 %in% varList2) {
+     filter(., NiN_variable_code == x2) %>%
+     pivot_wider(., id_cols = identifikasjon_lokalid,
+                                       names_from = NiN_variable_code,
+                                       values_from = NiN_variable_value)
+  } else { select(., identifikasjon_lokalid, x1) %>%
+      distinct(., identifikasjon_lokalid) }}
+
+temp_out <- full_join(temp, temp2, by = "identifikasjon_lokalid")
+temp_out <- temp_out %>%
+  rename("first_variable" = 3,
+         "second_variable" = 4)
+
+temp_out <- temp_out %>%
+  group_by(first_variable, second_variable) %>%
+  summarise(Antall_lokaliteter = n(),
+            Areal_km2 = round(sum(km2), 0))
+
+```
 
 
 
-
+```{r}
+ggplot(temp_out, aes(x = first_variable, y = Antall_lokaliteter))+
+    geom_bar(stat="identity",
+             fill = "#FFCC99",
+             colour = "grey20",
+             linewidth=1.5)+
+    theme_bw(base_size = 20) +
+  facet_wrap(.~second_variable)
+```
 
 
 
