@@ -60,7 +60,6 @@ varList_special <- c("hovedøkosystem","oppdragstaker", "fylke", "kommuner", "na
 varList_special_trunkert <- c("oppdragstaker", "kommuner", "naturtype")
 
 
-
 myBase_size <- 20
 
 
@@ -96,8 +95,12 @@ ui <-
                          tabPanel("Tabell", 
                                   DTOutput('years_tbl')
                                   )
-                       )
+                       ),
                        
+                       linebreaks(30),
+                       hr(),
+                       p("Av: ", tags$a(href="https://github.com/anders-kolstad/", target='_blank', "Anders L. Kolstad")),
+                       img(src='NINA_logo_sort_txt_norsk_under.png', align = "right", height=180,width=250)
                        )
              )),
    
@@ -157,7 +160,11 @@ ui <-
                            tabPanel("Tabell",
                                     DTOutput('ntyp_tabell')
                                     )
-                           )
+                           ),
+                         linebreaks(30),
+                         hr(),
+                         p("Av: ", tags$a(href="https://github.com/anders-kolstad/", target='_blank', "Anders L. Kolstad")),
+                         img(src='NINA_logo_sort_txt_norsk_under.png', align = "right", height=180,width=250)
                          )
                )
              ),
@@ -191,7 +198,11 @@ ui <-
                                     textOutput('warning2')),
                            tabPanel("Tabell",
                                     DTOutput('ntyp_utvalg_table'))
-                           )
+                           ),
+                         linebreaks(30),
+                         hr(),
+                         p("Av: ", tags$a(href="https://github.com/anders-kolstad/", target='_blank', "Anders L. Kolstad")),
+                         img(src='NINA_logo_sort_txt_norsk_under.png', align = "right", height=180,width=250)
                          )
              )),
 
@@ -202,7 +213,7 @@ ui <-
                
                # Instructions----
                tabPanel("Contakt",
-                        p("Denne appen er laget av  ", tags$a(href="https://github.com/anders-kolstad/", target='_blank', "Anders L. Kolstad."))),
+                        p("Denne appen er laget av  ", tags$a(href="https://github.com/anders-kolstad/", target='_blank', "Anders L. Kolstad ved NINA, Trondheim"))),
                tabPanel('Informasjon',
                         uiOutput('info')
                         )
@@ -509,7 +520,8 @@ output$info <- renderUI({
   antall <- length(ntyper)
   antall_lok <- nrow(naturtyper)
   tagList(
-  p("See ", tags$a(href="https://github.com/NINAnor/naturtypedata/blob/main/dataRAW.R", target='_blank', "her"), " for detaljer om hvordan datasettet er tilrettelagt. Datasettet består av", antall, "naturtyper som er kartlagt etter Miljødirekatoratets instruks senest i 2021. Dette utgjør", antall_lok, "lokaliteter. Kartleggingsinstruksen inneholder 111 natutyper i 2021 (og 2022). Det er antatt at de resterende typene so ikke finnes i dette datasettet gjelder typer som  kartlegges med fjernmåling, eller som ikke er påmøtt i felt enda. Dette bør undersøkes og evt bekreftes." )
+    p("Denne appen har som hensikt å gjøre det lettere å undersøke datasettet Naturtyper etter Miljødirektoratets Instruks, spesielt med tanke på fordelingen av feltregistrerte variabler og aggregterte tilstand- eller kvalitetsvariabler på tvers av romlig og tidsmessig variasjon."),
+  p("See ", tags$a(href="https://github.com/NINAnor/naturtypedata/blob/main/dataRAW.R", target='_blank', "her"), " for detaljer om hvordan datasettet er tilrettelagt. Datasettet består av", antall, "naturtyper som er kartlagt etter Miljødirekatoratets instruks senest i 2021. Dette utgjør", antall_lok, "lokaliteter. Kartleggingsinstruksen inneholder 111 natutyper i 2021 (og 2022). Det er antatt at de resterende typene som ikke finnes i dette datasettet gjelder typer som  kartlegges med fjernmåling, eller som ikke er påmøtt i felt enda. Dette bør undersøkes og evt bekreftes." )
   )
 })
 
