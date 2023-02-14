@@ -37,6 +37,15 @@ varList <- c("kartleggingsår",
              "uk_spesieltdårligkartlagt",
              "uk_truet")
 
+varList2 <- c("kartleggingsår", 
+             "tilstand", 
+             "naturmangfold", 
+             "lokalitetskvalitet", 
+             "oppdragstaker",
+             "fylke",
+             "region",
+             "kommuner",
+             "mosaikk")
 
 
 
@@ -146,7 +155,7 @@ ui <-
                          )
                )
              ),
-    tabPanel("Naturtyper - NiN-variabler",
+    tabPanel("Naturtyper - detaljert",
              sidebarLayout(
                sidebarPanel(width=3,
                             uiOutput('pickNaturtype2'),
@@ -157,7 +166,7 @@ ui <-
                                           `live-search` = TRUE)),
                             pickerInput('myFacet',
                                         "Velg evt. gruppering",
-                                        choices = c("Ingen", varList),
+                                        choices = c("Ingen", varList2),
                                         options = list(
                                           `live-search` = TRUE)),
                             numericInput("ncols", "Antall kolonner", value = 2, min = 1, max = 4),
@@ -172,7 +181,8 @@ ui <-
                          tabsetPanel(
                            tabPanel("Figur",
                                     plotOutput('ntyp_utvalg',
-                                               height = "800px")),
+                                               height = "800px"),
+                                    textOutput('warning2')),
                            tabPanel("Tabell",
                                     DTOutput('ntyp_utvalg_table'))
                            )
@@ -245,7 +255,12 @@ server <- function(input, output, session) ({
                linewidth=1.5)+
       theme_bw(base_size = myBase_size)+
       xlab(input$x_axis_oversikt)
-    if(input$x_axis_oversikt %in% varList_special) gg_out <- gg_out + coord_flip()
+    if(input$x_axis_oversikt %in% varList_special) {
+      gg_out <- gg_out + 
+      theme(axis.title.y = element_blank(),
+            axis.text.y = element_blank())+
+      coord_flip() 
+    }
     return(gg_out)
   })
   
@@ -401,56 +416,65 @@ server <- function(input, output, session) ({
  # A reactive list of possible variables to look at for each naturtype
  observeEvent(input$naturtype2, {
    updatePickerInput(session = session, inputId = "variable1",
-                     choices = c(varList, 
-                                 unique(naturtyper_long_selected2()$NiN_variable_code))) 
+                     choices = list("Generelle variabler" = varList2,
+                                    "NiN-variabler" = unique(naturtyper_long_selected2()$NiN_variable_code))) 
  })
  
  
- # Bind long data with normal data to get all possible variables in same column
- naturtyper_long_selected_var <- reactive({
+ # Prep data for plotting
+ naturtyper_selected_var <- reactive({
    
-   if(input$variable1 %in% varList) {
-     out_dat <- naturtyper %>%
-       filter(naturtype == input$naturtype2)
-   } else {
-     out_dat <- naturtyper_long_selected2()
-   }
+   temp <- naturtyper_long_selected2() %>%
+     { if( !input$variable1 %in% varList2) {
+       filter(., NiN_variable_code == input$variable1) %>%
+         pivot_wider(., id_cols = identifikasjon_lokalid,
+                     names_from = NiN_variable_code,
+                     values_from = NiN_variable_value) %>%
+         full_join(select(naturtyper, identifikasjon_lokalid, km2),
+                   by = "identifikasjon_lokalid") %>%
+         select(identifikasjon_lokalid, km2, 2)
+     } else { select(., identifikasjon_lokalid, km2, input$variable1) %>%
+         distinct(., identifikasjon_lokalid, .keep_all = T)}}
    
-   # Stop here
-   
-   #bind1 <- naturtyper_long_selected2() %>%
-   #  mutate(variable = NiN_variable_code,
-   #         value = as.character(NiN_variable_value))
-   #
-   #dat1 <- naturtyper %>%
-   #  filter(naturtype == input$naturtype2) %>%
-   #  pivot_longer(cols = varList,
-   #              names_to = "variable",
-   #              values_to = "value") %>%
-   #  bind_rows(bind1)
-
-   dat2 <- dat1 %>%
-     filter(variable == input$variable1 | variable == input$myFacet) %>%  
-     group_by(variable, value) %>%
-    #  { if(!input$myFacet %in% "Ingen") group_by(., !!rlang::sym(input$myFacet), .add=T) else . } %>%
+    if(input$myFacet != "Ingen") {
+     temp2 <- naturtyper_long_selected2() %>%
+       { if( !input$myFacet %in% varList2) {
+         filter(., NiN_variable_code == input$myFacet) %>%
+           pivot_wider(., id_cols = identifikasjon_lokalid,
+                       names_from = NiN_variable_code,
+                       values_from = NiN_variable_value)
+       } else { select(., identifikasjon_lokalid, !! rlang::sym(input$myFacet)) %>%
+           distinct(., identifikasjon_lokalid, .keep_all = T) }} %>%
+       full_join(temp, by = "identifikasjon_lokalid") %>%
+       rename("second_variable" = 2,
+              "first_variable" = 4)
+    } else {temp2 <- temp %>%
+    rename("first_variable" = 3)}
+     
+   temp_out <- temp2 %>%
+     group_by(first_variable) %>%
+     {if (input$myFacet != "Ingen") group_by(., second_variable, .add=T) else . } %>%
      summarise(Antall_lokaliteter = n(),
                Areal_km2 = round(sum(km2), 0))
    
-   if(input$variable1 %in% varList_special) dat2 <- dat2 %>% mutate(variable = fct_reorder(factor(variable), !! rlang::sym(input$yaxis)))
-   if(input$variable1 %in% varList_special_trunkert) dat2 <- dat2 %>% arrange(desc(Antall_lokaliteter)) %>% slice_head(n = 15)
+   if(input$variable1 %in% varList_special) 
+     temp_out <- temp_out %>% 
+        mutate(first_variable =
+                 fct_reorder(factor(first_variable), !! rlang::sym(input$yaxis)))
+   
+   if(input$variable1 %in% varList_special_trunkert) 
+     temp_out <- temp_out %>%
+      arrange(desc(!! rlang::sym(input$yaxis))) %>% 
+     slice_head(n = 15)
+   
+   return(temp_out)
     
  })
    
- 
- ## A reactive list of possible facet variables
- #observeEvent(input$variable1, {
- #  updatePickerInput(session = session, inputId = "myFacet",
- #                    choices = varList[!varList %in% input$variable1])
- #})
- 
+
 output$ntyp_utvalg <- renderPlot({
-  out <- naturtyper_long_selected_var() %>%
-    ggplot(aes_string(x = "value", y = input$yaxis))+
+  out <- naturtyper_selected_var() %>%
+    ggplot(aes_string(x = "first_variable", y = input$yaxis))+
     geom_bar(stat="identity",
              fill = if_else(input$yaxis == "Antall_lokaliteter", "#FFCC99", "#FF9933"),
              colour = "grey20",
@@ -459,14 +483,20 @@ output$ntyp_utvalg <- renderPlot({
     xlab(input$variable1)
   if(input$myFacet != "Ingen") {
     out <- out +
-      facet_wrap(.~get(input$myFacet),
+      facet_wrap(.~second_variable,
                  ncol = input$ncols)
   }
+  if(input$variable1 %in% varList_special) out <- out + coord_flip()
+  
   return(out)
 })
   
+
+output$warning2 <- renderText(if(input$variable1 %in% varList_special_trunkert) "Kun de 15 vanligste grupperingene er vist (målt i antall lokaliteter)")
+
+
 output$ntyp_utvalg_table <- renderDT({
-  naturtyper_long_selected_var()
+  naturtyper_selected_var()
   })
 
 output$info <- renderUI({

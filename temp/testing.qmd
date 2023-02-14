@@ -178,9 +178,56 @@ ggplot(temp_out, aes(x = first_variable, y = Antall_lokaliteter))+
 ```
 
 
+```{r}
+tempdat <- naturtyper_long %>%
+  filter(naturtype == "Naturbeitemark")
+
+x1 <- "kartleggingsår"
+x2 <- "7FA"
+x1 <- x2
+x2 <-  "Ingen"
+x2 <-  "tilstand"
+
+km <- select(naturtyper, identifikasjon_lokalid, km2)
+```
 
 
 
+```{r}
+temp <- tempdat %>%
+     { if( !x1 %in% varList2) {
+       filter(., NiN_variable_code == x1) %>%
+         pivot_wider(., id_cols = identifikasjon_lokalid,
+                     names_from = NiN_variable_code,
+                     values_from = NiN_variable_value) %>%
+         full_join(select(naturtyper, identifikasjon_lokalid, km2),
+                   by = "identifikasjon_lokalid") %>%
+         select(identifikasjon_lokalid, km2, 2)
+       } else { select(., identifikasjon_lokalid, km2, x1) %>%
+         distinct(., identifikasjon_lokalid, .keep_all = T)}}
+   
+    if(x2 != "Ingen") {
+     temp2 <- tempdat %>%
+       { if( !x2 %in% varList2) {
+         filter(., NiN_variable_code == x2) %>%
+           pivot_wider(., id_cols = identifikasjon_lokalid,
+                       names_from = NiN_variable_code,
+                       values_from = NiN_variable_value)
+       } else { select(., identifikasjon_lokalid, x2) %>%
+           distinct(., identifikasjon_lokalid, .keep_all = T) }} %>%
+       full_join(temp, by = "identifikasjon_lokalid") %>%
+       rename("second_variable" = 2,
+              "first_variable" = 4)
+    } else {temp2 <- temp %>%
+    rename("first_variable" = 3)}
+     
+   temp_out <- temp2 %>%
+     group_by(first_variable) %>%
+     {if (x2 != "Ingen") group_by(., second_variable, .add=T) else . } %>%
+     summarise(
+       Antall_lokaliteter = n(),
+       Areal_km2 = round(sum(km2), 0))
+```
 
 
 
