@@ -1,7 +1,6 @@
 library(sf)
-library(dplyr)
+library(tidyverse)
 library(units)
-library(stringr)
 library(units)
 
 # This script take the file downloaded from geoNorge and processes it for the shiny app.
@@ -41,7 +40,7 @@ path <- ifelse(dir == "C:",
 #dat <- sf::read_sf(paste0(path, "Natur_Naturtyper_NiN_norge_med_svalbard_25833.gdb"))
 dat <- sf::read_sf(path)
 
-# Get county delimination
+# Get county delineation
 path_county <- ifelse(dir == "C:", 
                       "R:/GeoSpatialData/AdministrativeUnits/Norway_AdministrativeUnits/Original/Norway_County/versjon2022/Basisdata_0000_Norge_25833_Fylker_FGDB.gdb",
                       "/data/R/GeoSpatialData/AdministrativeUnits/Norway_AdministrativeUnits/Original/Norway_County/versjon2022/Basisdata_0000_Norge_25833_Fylker_FGDB.gdb")
@@ -88,6 +87,7 @@ dat <- dat[dat$naturtype %in% keepers,]
 
 
 # Get fylke and region for each polygon -----------------
+# This takes several minutes
 dat_counties <- st_intersection(dat, counties)
 # Check for boundary issues
 unique(st_geometry_type(dat_counties)) # no lines introduced
@@ -96,7 +96,7 @@ nrow(dat)-nrow(dat_counties)  # 47 new polygons means 94 polygons were split bet
 dups <- dat_counties$identifikasjon_lokalId[duplicated(dat_counties$identifikasjon_lokalId)]
 dups2 <- dat_counties[dat_counties$identifikasjon_lokalId %in% dups,]
 # Assign these to the county where they are biggest
-# - force non-scientific nmbers
+# - force non-scientific numbers
 options("scipen"=100, "digits"=4)
 # calculate area
 dups3 <- dups2 %>%
@@ -186,6 +186,7 @@ dat2 <- dat %>%
 
 # Melted data set  -----------------------------------------
 # (one row for each nin-variable within each locality)
+# This also takes 20 sec and results in 1.4 million rows
 dat2_long <- tidyr::separate_rows(dat2, ninBeskrivelsesvariable, sep=",") %>%
   separate(col = ninBeskrivelsesvariable,
            into = c("NiN_variable_code", "NiN_variable_value"),
@@ -196,9 +197,6 @@ dat2_long <- tidyr::separate_rows(dat2, ninBeskrivelsesvariable, sep=",") %>%
   group_by(naturtype, NiN_variable_code, NiN_variable_value) %>%
   filter(n() > 2) %>% ungroup()
 # The 'expected two pieces' warning is fine to ignore
-
-
-# STOPPED HERE 15.02  --------------------
 
 
 # Remove nin-variables not recorded in 2021 ---------------
@@ -220,13 +218,15 @@ keepers_var <- var_keepers_df$variable[grepl("2021" , var_keepers_df$Year)]
 dat2_long <- dat2_long[dat2_long$NiN_variable_code %in% keepers_var,]
 
 
-# remove those that end in '-' and that consist of only one symbol --------------
+# remove variables that end in '-' and that consist of only one symbol --------------
+# These are 'obvious' mistakes
+nrow(dat2_long) # 1 365 997
 dat2_long_2 <- dat2_long %>%
   filter(!str_detect(NiN_variable_code, "-$"))
-nrow(dat2_long_2) # 1084750
+nrow(dat2_long_2) # 1 365 286
 dat2_long_2 <- dat2_long_2 %>%
   filter(nchar(NiN_variable_code)>1)
-nrow(dat2_long_2) # 1082675
+nrow(dat2_long_2) # 1 362 641
 
 # Remove those with only zeros
 temp <- dat2_long_2 %>%
@@ -241,15 +241,63 @@ dat2_long_3 <- dat2_long_2 %>%
   filter(NiN_variable_code %in% temp$NiN_variable_code)
 
 length(unique(dat2_long_2$NiN_variable_code))-length(unique(dat2_long_3$NiN_variable_code))
-# This operation cut 55 variables
+# This operation cut 61 variables
 
 
 # Check for other weird NiN variable names ----------------------------
 # There are a lot of errors in the column ninBeskrivelsesvariable
-View(table(dat2_long_3$NiN_variable_code))
-
+  # View(table(dat2_long_3$NiN_variable_code))
 # This looks better.
 
+
+# Add month
+dat2_long_3 <- dat2_long_3 %>%
+  mutate("måned" = substr(kartleggingsdato, 5, 6))
+dat2 <- dat2 %>%
+  mutate("måned" = substr(kartleggingsdato, 5, 6))
+
+
+# Add natur type code
+# to the start of naturtype name in order to sort better
+get_code <- dat2 %>%
+  filter(grepl("ntyp", naturtypeKode)) %>%
+  distinct(naturtype, .keep_all = T) %>%
+  mutate(naturtypekode_short = str_remove(naturtypeKode, "ntyp_")) %>%
+  select(naturtypekode_short, naturtype)
+dat2 <- dat2 %>%
+  left_join(get_code, by = "naturtype") %>%
+  mutate(naturtype_temp = paste(naturtypekode_short, naturtype, sep = "_"),
+         naturtype = paste(naturtypekode_short, naturtype, sep = "_"))
+dat2_long_3 <- dat2_long_3 %>%
+  left_join(get_code, by = "naturtype") %>%
+  mutate(naturtype = paste(naturtypekode_short, naturtype, sep = "_"))
+
+# The long data set is slow to load. I will delete some columns, see if that helps.
+names(dat2_long_3)
+dat2_long_3 <- dat2_long_3 %>%
+  select(identifikasjon_lokalId,
+         hovedøkosystem,
+         kartleggingsår,
+         kommuner,
+         kriterium_nærTruet,
+         kriterium_sentralØkosystemFunksjon,
+         kriterium_spesieltDårligKartlagt,
+         kriterium_truet,
+         lokalitetskvalitet,
+         mosaikk,
+         naturmangfold,
+         naturtype,
+         NiN_variable_code,
+         NiN_variable_value,
+         oppdragstaker,
+         tilstand,
+         usikkerhet,
+         objtype,
+         fylke,
+         region,
+         km2,
+         måned
+         )
 
 #saveRDS(dat2, "shinyData/naturtyper.rds")
 #saveRDS(dat2_long_3, "shinyData/naturtyper_long.rds")

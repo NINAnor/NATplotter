@@ -18,25 +18,6 @@ readData <- function(session, naturtyper) {
   naturtyper_long <<- readRDS("shinyData/naturtyper_long.rds")
   
   progress$set(value = 0.5, message = 'Preparing data...')
-  # Add month
-  naturtyper_long <<- naturtyper_long %>%
-    mutate("måned" = substr(kartleggingsdato, 5, 6))
-  naturtyper <<- naturtyper %>%
-    mutate("måned" = substr(kartleggingsdato, 5, 6))
-  
-  # Add natur type code
-  get_code <<- naturtyper %>%
-    filter(grepl("ntyp", naturtypekode)) %>%
-    distinct(naturtype, .keep_all = T) %>%
-    mutate(naturtypekode_short = str_remove(naturtypekode, "ntyp_")) %>%
-    select(naturtypekode_short, naturtype)
-  naturtyper <<- naturtyper %>%
-    left_join(get_code, by = "naturtype") %>%
-    mutate(naturtype_temp = paste(naturtypekode_short, naturtype, sep = "_"),
-           naturtype = paste(naturtypekode_short, naturtype, sep = "_"))
-  naturtyper_long <<- naturtyper_long %>%
-    left_join(get_code, by = "naturtype") %>%
-    mutate(naturtype = paste(naturtypekode_short, naturtype, sep = "_"))
   
   progress$close()
 }
@@ -55,13 +36,13 @@ varList <- c("kartleggingsår",
              "kommuner",
              "mosaikk", 
              "usikkerhet", 
-             "uk_nærtruet",
-             "uk_sentraløkosystemfunksjon",
-             "uk_spesieltdårligkartlagt",
-             "uk_truet")
+             "kriterium_nærTruet",
+             "kriterium_sentralØkosystemFunksjon",
+             "kriterium_spesieltDårligKartlagt",
+             "kriterium_truet")
 
 varList_noMonth <- c("kartleggingsår",
-             #"måned",
+             "måned",
              "tilstand", 
              "naturmangfold", 
              "lokalitetskvalitet", 
@@ -73,10 +54,10 @@ varList_noMonth <- c("kartleggingsår",
              "kommuner",
              "mosaikk", 
              "usikkerhet", 
-             "uk_nærtruet",
-             "uk_sentraløkosystemfunksjon",
-             "uk_spesieltdårligkartlagt",
-             "uk_truet")
+             "kriterium_nærTruet",
+             "kriterium_sentralØkosystemFunksjon",
+             "kriterium_spesieltDårligKartlagt",
+             "kriterium_truet")
 
 
 varList2 <- c("kartleggingsår",
@@ -134,7 +115,7 @@ ui <-
                                   )
                        ),
                        
-                       linebreaks(30),
+                       linebreaks(20),
                        hr(),
                        p("Av: ", tags$a(href="https://github.com/anders-kolstad/", target='_blank', "Anders L. Kolstad")),
                        img(src='NINA_logo_sort_txt_norsk_under.png', align = "right", height=180,width=250)
@@ -198,7 +179,7 @@ ui <-
                                     DTOutput('ntyp_tabell')
                                     )
                            ),
-                         linebreaks(30),
+                         linebreaks(20),
                          hr(),
                          p("Av: ", tags$a(href="https://github.com/anders-kolstad/", target='_blank', "Anders L. Kolstad")),
                          img(src='NINA_logo_sort_txt_norsk_under.png', align = "right", height=180,width=250)
@@ -236,7 +217,7 @@ ui <-
                            tabPanel("Tabell",
                                     DTOutput('ntyp_utvalg_table'))
                            ),
-                         linebreaks(30),
+                         linebreaks(20),
                          hr(),
                          p("Av: ", tags$a(href="https://github.com/anders-kolstad/", target='_blank', "Anders L. Kolstad")),
                          img(src='NINA_logo_sort_txt_norsk_under.png', align = "right", height=180,width=250)
@@ -482,25 +463,25 @@ server <- function(input, output, session) ({
    temp <- naturtyper_long_selected2() %>%
      { if( !input$variable1 %in% varList2) {
        filter(., NiN_variable_code == input$variable1) %>%
-         pivot_wider(., id_cols = identifikasjon_lokalid,
+         pivot_wider(., id_cols = identifikasjon_lokalId,
                      names_from = NiN_variable_code,
                      values_from = NiN_variable_value) %>%
-         full_join(select(naturtyper, identifikasjon_lokalid, km2),
-                   by = "identifikasjon_lokalid") %>%
-         select(identifikasjon_lokalid, km2, 2)
-     } else { select(., identifikasjon_lokalid, km2, input$variable1) %>%
-         distinct(., identifikasjon_lokalid, .keep_all = T)}}
+         full_join(select(naturtyper, identifikasjon_lokalId, km2),
+                   by = "identifikasjon_lokalId") %>%
+         select(identifikasjon_lokalId, km2, 2)
+     } else { select(., identifikasjon_lokalId, km2, input$variable1) %>%
+         distinct(., identifikasjon_lokalId, .keep_all = T)}}
    
     if(input$myFacet != "Ingen") {
      temp2 <- naturtyper_long_selected2() %>%
        { if( !input$myFacet %in% varList2) {
          filter(., NiN_variable_code == input$myFacet) %>%
-           pivot_wider(., id_cols = identifikasjon_lokalid,
+           pivot_wider(., id_cols = identifikasjon_lokalId,
                        names_from = NiN_variable_code,
                        values_from = NiN_variable_value)
-       } else { select(., identifikasjon_lokalid, !! rlang::sym(input$myFacet)) %>%
-           distinct(., identifikasjon_lokalid, .keep_all = T) }} %>%
-       full_join(temp, by = "identifikasjon_lokalid") %>%
+       } else { select(., identifikasjon_lokalId, !! rlang::sym(input$myFacet)) %>%
+           distinct(., identifikasjon_lokalId, .keep_all = T) }} %>%
+       full_join(temp, by = "identifikasjon_lokalId") %>%
        rename("second_variable" = 2,
               "first_variable" = 4)
     } else {temp2 <- temp %>%
@@ -555,11 +536,11 @@ output$ntyp_utvalg_table <- renderDT({
   })
 
 output$info <- renderUI({
-  antall <- length(unique(naturtyper$naturtype_temp))
+  antall <- length(unique(naturtyper$naturtype))
   antall_lok <- nrow(naturtyper)
   tagList(
     p("Denne appen har som hensikt å gjøre det lettere å undersøke datasettet Naturtyper etter Miljødirektoratets Instruks, spesielt med tanke på fordelingen av feltregistrerte variabler og aggregterte tilstand- eller kvalitetsvariabler på tvers av romlig og tidsmessig variasjon."),
-  p("See ", tags$a(href="https://github.com/NINAnor/naturtypedata/blob/main/dataRAW.R", target='_blank', "her"), " for detaljer om hvordan datasettet er tilrettelagt. Datasettet består av", antall, "naturtyper som er kartlagt etter Miljødirekatoratets instruks senest i 2021. Dette utgjør", antall_lok, "lokaliteter. Kartleggingsinstruksen inneholder 111 natutyper i 2021 (og 2022). Det er antatt at de resterende typene som ikke finnes i dette datasettet gjelder typer som  kartlegges med fjernmåling, eller som ikke er påmøtt i felt enda. Dette bør undersøkes og evt bekreftes." )
+  p("See ", tags$a(href="https://github.com/NINAnor/naturtypedata/blob/main/dataRAW.R", target='_blank', "her"), " for detaljer om hvordan datasettet er tilrettelagt. Datasettet består av", antall, "naturtyper som er kartlagt etter Miljødirekatoratets instruks senest i 2021. Dette utgjør", antall_lok, "lokaliteter. Kartleggingsinstruksen inneholder 111 natutyper i 2022. Det er antatt at de resterende typene som ikke finnes i dette datasettet gjelder typer som  kartlegges med fjernmåling, eller som ikke er påmøtt i felt enda. Dette bør undersøkes og evt bekreftes." )
   )
 })
 
@@ -567,7 +548,7 @@ output$pickNaturtype <- renderUI({
   tagList(
     pickerInput('naturtype',
                 "Velg naturtype",
-                choices = sort(unique(naturtyper$naturtype_temp)),
+                choices = sort(unique(naturtyper$naturtype)),
                 options = list(
                   `live-search` = TRUE))
   )
@@ -577,7 +558,7 @@ output$pickNaturtype2 <- renderUI({
   tagList(
     pickerInput('naturtype2',
                 "Velg naturtype",
-                choices = sort(unique(naturtyper$naturtype_temp)),
+                choices = sort(unique(naturtyper$naturtype)),
                 options = list(
                   `live-search` = TRUE))
     )
