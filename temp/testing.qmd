@@ -180,8 +180,9 @@ ggplot(temp_out, aes(x = first_variable, y = Antall_lokaliteter))+
 
 ```{r}
 tempdat <- naturtyper_long %>%
-  filter(naturtype == "Naturbeitemark")
+  filter(naturtype == "D02_02_Naturbeitemark")
 
+x1 <- "tilstand"
 x1 <- "kartleggingsår"
 x2 <- "7FA"
 x1 <- x2
@@ -197,31 +198,39 @@ km <- select(naturtyper, identifikasjon_lokalid, km2)
 temp <- tempdat %>%
      { if( !x1 %in% varList2) {
        filter(., NiN_variable_code == x1) %>%
-         pivot_wider(., id_cols = identifikasjon_lokalid,
+         pivot_wider(., id_cols = identifikasjon_lokalId,
                      names_from = NiN_variable_code,
                      values_from = NiN_variable_value) %>%
-         full_join(select(naturtyper, identifikasjon_lokalid, km2),
-                   by = "identifikasjon_lokalid") %>%
-         select(identifikasjon_lokalid, km2, 2)
-       } else { select(., identifikasjon_lokalid, km2, x1) %>%
-         distinct(., identifikasjon_lokalid, .keep_all = T)}}
+         full_join(select(naturtyper, identifikasjon_lokalId, km2, kartleggingsår),
+                   by = "identifikasjon_lokalId") %>%
+         select(identifikasjon_lokalId, km2, 2, kartleggingsår)
+       } else { select(., identifikasjon_lokalId, km2, x1, kartleggingsår) %>%
+         distinct(., identifikasjon_lokalId, .keep_all = T)}}
    
     if(x2 != "Ingen") {
      temp2 <- tempdat %>%
        { if( !x2 %in% varList2) {
          filter(., NiN_variable_code == x2) %>%
-           pivot_wider(., id_cols = identifikasjon_lokalid,
+           pivot_wider(., id_cols = identifikasjon_lokalId,
                        names_from = NiN_variable_code,
                        values_from = NiN_variable_value)
-       } else { select(., identifikasjon_lokalid, x2) %>%
-           distinct(., identifikasjon_lokalid, .keep_all = T) }} %>%
-       full_join(temp, by = "identifikasjon_lokalid") %>%
+       } else { select(., identifikasjon_lokalId, x2) %>%
+           distinct(., identifikasjon_lokalId, .keep_all = T) }} %>%
+       full_join(temp, by = "identifikasjon_lokalId") %>%
+     mutate(year_num = as.numeric(kartleggingsår)) %>%
+     filter(year_num %between% c(2021, 2022)) %>%
        rename("second_variable" = 2,
               "first_variable" = 4)
     } else {temp2 <- temp %>%
+    mutate(year_num = as.numeric(kartleggingsår)) %>%
+    filter(year_num %between% c(2021, 2022)) %>%
     rename("first_variable" = 3)}
      
-   temp_out <- temp2 %>%
+temp3 <- temp2 %>%
+     mutate(year_num = as.numeric(kartleggingsår)) %>%
+     filter(year_num %between% c(2021, 2022))   
+
+temp_out <- temp2 %>%
      group_by(first_variable) %>%
      {if (x2 != "Ingen") group_by(., second_variable, .add=T) else . } %>%
      summarise(

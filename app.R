@@ -3,6 +3,7 @@ library(shiny)
 library(tidyverse)
 library(shinyWidgets)
 library(DT)
+library(data.table)
 
 # Define data object anme
 naturtyper <- NULL
@@ -41,25 +42,6 @@ varList <- c("kartleggingsår",
              "kriterium_spesieltDårligKartlagt",
              "kriterium_truet")
 
-varList_noMonth <- c("kartleggingsår",
-             "måned",
-             "tilstand", 
-             "naturmangfold", 
-             "lokalitetskvalitet", 
-             "hovedøkosystem", 
-             "oppdragstaker",
-             "naturtype",
-             "fylke",
-             "region",
-             "kommuner",
-             "mosaikk", 
-             "usikkerhet", 
-             "kriterium_nærTruet",
-             "kriterium_sentralØkosystemFunksjon",
-             "kriterium_spesieltDårligKartlagt",
-             "kriterium_truet")
-
-
 varList2 <- c("kartleggingsår",
               "måned",
              "tilstand", 
@@ -92,7 +74,7 @@ ui <-
                sidebarPanel(width = 3,
                             pickerInput('x_axis_oversikt',
                                          'Hva vil du ha på x-aksen?',
-                                         choices = varList_noMonth,
+                                         choices = varList,
                                         selected = "kartleggingsår"),
                             radioGroupButtons(
                               inputId = "sortBy",
@@ -205,6 +187,13 @@ ui <-
                               inputId = "yaxis",
                               label = "Hva skal y-aksen vise?",
                               choices = c("Antall_lokaliteter", "Areal_km2")
+                            ),
+                            numericRangeInput(
+                              inputId = "years_subset",
+                              label = "Filtrer etter kartleggingsår:", 
+                              min = 2018,
+                              max = 2022,
+                              value = c(2018, 2022)
                             )
                             ),
                mainPanel(width = 9,
@@ -466,10 +455,14 @@ server <- function(input, output, session) ({
          pivot_wider(., id_cols = identifikasjon_lokalId,
                      names_from = NiN_variable_code,
                      values_from = NiN_variable_value) %>%
-         full_join(select(naturtyper, identifikasjon_lokalId, km2),
+         full_join(select(naturtyper, 
+                          identifikasjon_lokalId, 
+                          km2, 
+                          kartleggingsår),
                    by = "identifikasjon_lokalId") %>%
-         select(identifikasjon_lokalId, km2, 2)
-     } else { select(., identifikasjon_lokalId, km2, input$variable1) %>%
+         select(identifikasjon_lokalId, km2, 2, kartleggingsår)
+     } else { select(., identifikasjon_lokalId, km2, 
+                     input$variable1, kartleggingsår) %>%
          distinct(., identifikasjon_lokalId, .keep_all = T)}}
    
     if(input$myFacet != "Ingen") {
@@ -482,11 +475,15 @@ server <- function(input, output, session) ({
        } else { select(., identifikasjon_lokalId, !! rlang::sym(input$myFacet)) %>%
            distinct(., identifikasjon_lokalId, .keep_all = T) }} %>%
        full_join(temp, by = "identifikasjon_lokalId") %>%
+       mutate(year_num = as.numeric(kartleggingsår)) %>%
+       filter(year_num %between% input$years_subset) %>%
        rename("second_variable" = 2,
               "first_variable" = 4)
     } else {temp2 <- temp %>%
+      mutate(year_num = as.numeric(kartleggingsår)) %>%
+      filter(year_num %between% input$years_subset) %>%
     rename("first_variable" = 3)}
-     
+   
    temp_out <- temp2 %>%
      group_by(first_variable) %>%
      {if (input$myFacet != "Ingen") group_by(., second_variable, .add=T) else . } %>%
