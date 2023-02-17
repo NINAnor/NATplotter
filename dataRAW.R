@@ -299,8 +299,21 @@ dat2_long_3 <- dat2_long_3 %>%
          måned
          )
 
+# Anonymise the company names
+temp <- data.frame("oppdragstaker" = unique(dat2$oppdragstaker),
+                   "oppdragstaker_ID" = LETTERS[1:length(unique(dat2$oppdragstaker))])
+temp$oppdragstaker2 <- paste("oppdragstaker", temp$oppdragstaker_ID, sep="_")
+temp2 <- temp$oppdragstaker2
+names(temp2) <- temp$oppdragstaker
+
+dat2 <- dat2 %>%
+  mutate(oppdragstaker = recode(oppdragstaker,
+                                !!!temp2))
+dat2_long_3 <- dat2_long_3 %>%
+  mutate(oppdragstaker = recode(oppdragstaker,
+                                !!!temp2))
+
 #saveRDS(dat2, "shinyData/naturtyper.rds")
 #saveRDS(dat2_long_3, "shinyData/naturtyper_long.rds")
-
 
 
