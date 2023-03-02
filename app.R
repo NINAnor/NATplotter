@@ -212,6 +212,27 @@ ui <-
                          img(src='NINA_logo_sort_txt_norsk_under.png', align = "right", height=180,width=250)
                          )
              )),
+    
+    # '-------------             
+    # **TAB RÅDATA ----   
+    tabPanel("Rådata",
+             sidebarLayout(
+               sidebarPanel(width=3,
+                            h5("Her er noen vanlige filtre. Du kan også filtrere hver enkelt kolonne til høyre."),
+                            numericRangeInput(
+                              inputId = "years_subset_raw",
+                              label = "Filtrer etter kartleggingsår:", 
+                              min = 2018,
+                              max = 2022,
+                              value = c(2018, 2022)
+                            ),
+                            uiOutput('pickNaturtype_raw'),
+                            uiOutput('fylke_raw'),
+                            uiOutput('kommune_raw')
+                            ),
+               mainPanel(width=9,
+                         DTOutput('raw'))
+             )),
 
 
     # '-------------             
@@ -557,9 +578,81 @@ output$pickNaturtype2 <- renderUI({
                 "Velg naturtype",
                 choices = sort(unique(naturtyper$naturtype)),
                 options = list(
-                  `live-search` = TRUE))
+                  `live-search` = TRUE
+                  ))
     )
   })
+
+#### RÅDATA
+output$pickNaturtype_raw <- renderUI({
+  tagList(
+    pickerInput('naturtype_raw',
+                "Velg naturtype",
+                choices = sort(unique(naturtyper$naturtype)),
+                selected = unique(naturtyper$naturtype),
+                multiple = T,
+                options = list(
+                  `live-search` = TRUE,
+                  `actions-box` = TRUE,
+                  `deselect-all-text` = "Ingen...",
+                  `select-all-text` = "Alle",
+                  `none-selected-text` = "..."))
+  )
+})
+
+output$fylke_raw <- renderUI({
+  tagList(
+    pickerInput('fylke_raw',
+                "Velg fylke",
+                choices = sort(unique(naturtyper$fylke)),
+                multiple = T,
+                selected = unique(naturtyper$fylke),
+                options = list(
+                  `live-search` = TRUE,
+                  `actions-box` = TRUE,
+                  `deselect-all-text` = "Ingen...",
+                  `select-all-text` = "Alle",
+                  `none-selected-text` = "..."))
+  )
+})
+
+output$kommune_raw <- renderUI({
+  tagList(
+    pickerInput('kommune_raw',
+                "Velg kommune",
+                choices = sort(unique(naturtyper$kommuner)),
+                multiple = T,
+                selected = unique(naturtyper$kommuner),
+                options = list(
+                  `live-search` = TRUE,
+                  `actions-box` = TRUE,
+                  `deselect-all-text` = "Ingen...",
+                  `select-all-text` = "Alle",
+                  `none-selected-text` = "..."))
+  )
+})
+
+raw_filtered <- reactive({
+  naturtyper %>%
+    filter(naturtype %in% input$naturtype_raw) %>%
+    mutate(year_num = as.numeric(kartleggingsår)) %>%
+    filter(year_num %between% input$years_subset_raw,
+           fylke %in% input$fylke_raw,
+           kommuner %in% input$kommune_raw)
+})
+
+output$raw <- renderDT({
+  DT::datatable(raw_filtered(),
+                options = list(
+                  pageLength = 15,  ## number of rows to output for each page
+                  scrollX = TRUE,   ## enable scrolling on X axis
+                  scrollY = TRUE,   ## enable scrolling on Y axis
+                  autoWidth = TRUE ## use smart column width handling
+                  ),
+                filter = 'top'
+  )
+})
+
 })
 
 
