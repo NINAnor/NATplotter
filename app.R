@@ -496,6 +496,7 @@ server <- function(input, output, session) ({
        } else { select(., identifikasjon_lokalId, !! rlang::sym(input$myFacet)) %>%
            distinct(., identifikasjon_lokalId, .keep_all = T) }} %>%
        full_join(temp, by = "identifikasjon_lokalId") %>%
+       rename(any_of(c('kartleggingsår' = 'kartleggingsår.x'))) %>%
        mutate(year_num = as.numeric(kartleggingsår)) %>%
        filter(year_num %between% input$years_subset) %>%
        rename("second_variable" = 2,
