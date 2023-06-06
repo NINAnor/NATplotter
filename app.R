@@ -52,7 +52,7 @@ varList2 <- c("kartleggingsår",
              "region",
              "kommuner",
              "mosaikk",
-             "km2")
+             "m2")
 
 
 
@@ -530,17 +530,18 @@ server <- function(input, output, session) ({
  
 
 output$ntyp_utvalg <- renderPlot({
-  if(input$variable1=="km2"){
+  if(input$variable1=="m2"){
     if(input$myFacet != "Ingen") {
     naturtyper_long |> 
       filter(naturtype == input$naturtype2) |>
-      group_by(identifikasjon_lokalId, .data[[input$myFacet]]) |>
-      summarise(Areal_km2 = round(sum(km2), 0)) |>  
-      ggplot(aes(Areal_km2))+
-      geom_histogram(
-        fill = "#FFCC99",
-        colour = "grey20",
-        linewidth=1.5)+
+        group_by(identifikasjon_lokalId) |>
+        summarise(Areal_m2 = round(sum(m2), 0)) |>  
+        ggplot(aes(Areal_m2))+
+        geom_histogram(
+          fill = "#FFCC99",
+          colour = "grey20",
+          linewidth=1.5,
+          breaks=c(0,249,499,1000,2000, 5000))+
       theme_bw(base_size = myBase_size)+
         facet_wrap(~.data[[input$myFacet]])
     
@@ -548,12 +549,13 @@ output$ntyp_utvalg <- renderPlot({
       naturtyper_long |> 
         filter(naturtype == input$naturtype2) |>
         group_by(identifikasjon_lokalId) |>
-        summarise(Areal_km2 = round(sum(km2), 0)) |>  
-        ggplot(aes(Areal_km2))+
+        summarise(Areal_m2 = round(sum(m2), 0)) |>  
+        ggplot(aes(Areal_m2))+
         geom_histogram(
           fill = "#FFCC99",
           colour = "grey20",
-          linewidth=1.5)+
+          linewidth=1.5,
+          breaks=c(0,249,499,1000,2000, 5000))+
         theme_bw(base_size = myBase_size)
       
     }
@@ -582,17 +584,17 @@ output$warning2 <- renderText(if(input$variable1 %in% varList_special_trunkert) 
 
 
 output$ntyp_utvalg_table <- renderDT({
-  if(input$variable1=="km2"){
+  if(input$variable1=="m2"){
     if(input$myFacet != "Ingen") {
       naturtyper_long |> 
         filter(naturtype == input$naturtype2) |>
         group_by(identifikasjon_lokalId, .data[[input$myFacet]]) |>
-        summarise(Areal_km2 = round(sum(km2), 0)) 
+        summarise(Areal_m2 = round(sum(m2), 0)) 
       }else{
         naturtyper_long |> 
           filter(naturtype == input$naturtype2) |>
           group_by(identifikasjon_lokalId) |>
-          summarise(Areal_km2 = round(sum(km2), 0))
+          summarise(Areal_m2 = round(sum(m2), 0))
       }
     }else{
   

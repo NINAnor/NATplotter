@@ -1,7 +1,6 @@
 library(sf)
 library(tidyverse)
 library(units)
-library(units)
 
 # This script take the file downloaded from geoNorge and processes it for the shiny app.
 # Replace the file and rerun the script when neccessary.
@@ -138,9 +137,11 @@ dat <- dat %>%
 
 #table(dat$region)
 
-# Calculate area
-dat$km2 <- drop_units(st_area(dat))/1000
 
+# Calculate area
+# Need to divide m2 by 1e+6 to get km2
+dat$km2 <- drop_units(st_area(dat))/100000
+dat$m2<-drop_units(st_area(dat))
 
 
 # Some recoding --------------------------------------------
@@ -296,6 +297,7 @@ dat2_long_3 <- dat2_long_3 %>%
          fylke,
          region,
          km2,
+         m2,
          måned
          )
 
