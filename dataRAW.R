@@ -315,7 +315,7 @@ dat2_long_3 <- dat2_long_3 %>%
   mutate(oppdragstaker = recode(oppdragstaker,
                                 !!!temp2))
 
-#saveRDS(dat2, "shinyData/naturtyper.rds")
-#saveRDS(dat2_long_3, "shinyData/naturtyper_long.rds")
+# saveRDS(dat2, "shinyData/naturtyper.rds")
+# saveRDS(dat2_long_3, "shinyData/naturtyper_long.rds")
 
 

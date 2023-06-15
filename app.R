@@ -4,6 +4,7 @@ library(tidyverse)
 library(shinyWidgets)
 library(DT)
 library(data.table)
+library(shinydashboard)
 
 # Define data object anme
 naturtyper <- NULL
@@ -203,9 +204,14 @@ ui <-
                            tabPanel("Figur",
                                     plotOutput('ntyp_utvalg',
                                                height = "800px"),
-                                    textOutput('warning2')),
+                                    textOutput('warning2'),
+                                    checkboxGroupInput("Tabs", label = h4("Explore smaller area"), choices = list("small" = "small"),selected = NULL)),
                            tabPanel("Tabell",
-                                    DTOutput('ntyp_utvalg_table'))
+                                    DTOutput('ntyp_utvalg_table')),
+                           conditionalPanel(
+                             condition = "input.Tabs == 'small'",
+                             tabPanel("small",plotOutput("small_areas"))
+                             ),
                            ),
                          linebreaks(20),
                          hr(),
@@ -535,13 +541,12 @@ output$ntyp_utvalg <- renderPlot({
     naturtyper_long |> 
       filter(naturtype == input$naturtype2) |>
         group_by(identifikasjon_lokalId) |>
-        summarise(Areal_m2 = round(sum(m2), 0)) |>  
+        summarise(Areal_m2 = round(sum(m2), 0))|>  
         ggplot(aes(Areal_m2))+
         geom_histogram(
           fill = "#FFCC99",
           colour = "grey20",
-          linewidth=1.5,
-          breaks=c(0,249,499,1000,2000, 5000))+
+          linewidth=1.5)+
       theme_bw(base_size = myBase_size)+
         facet_wrap(~.data[[input$myFacet]])
     
@@ -549,13 +554,12 @@ output$ntyp_utvalg <- renderPlot({
       naturtyper_long |> 
         filter(naturtype == input$naturtype2) |>
         group_by(identifikasjon_lokalId) |>
-        summarise(Areal_m2 = round(sum(m2), 0)) |>  
+        summarise(Areal_m2 = round(sum(m2), 0))|> 
         ggplot(aes(Areal_m2))+
         geom_histogram(
           fill = "#FFCC99",
           colour = "grey20",
-          linewidth=1.5,
-          breaks=c(0,249,499,1000,2000, 5000))+
+          linewidth=1.5)+
         theme_bw(base_size = myBase_size)
       
     }
@@ -579,6 +583,38 @@ output$ntyp_utvalg <- renderPlot({
   return(out)
   }
   }) 
+
+output$small_areas<-renderPlot({
+  if(input$variable1=="m2"){
+    if(input$myFacet != "Ingen") {
+      naturtyper_long |> 
+        filter(naturtype == input$naturtype2) |>
+        group_by(identifikasjon_lokalId) |>
+        summarise(Areal_m2 = round(sum(m2), 0))|>  
+        ggplot(aes(Areal_m2))+
+        geom_histogram(
+          fill = "#FFCC99",
+          colour = "grey20",
+          linewidth=1.5,
+          breaks=c(0,249,499,1000,2000, 5000))+
+        theme_bw(base_size = myBase_size)+
+        facet_wrap(~.data[[input$myFacet]])
+      
+    }else{
+      naturtyper_long |> 
+        filter(naturtype == input$naturtype2) |>
+        group_by(identifikasjon_lokalId) |>
+        summarise(Areal_m2 = round(sum(m2), 0))|> 
+        ggplot(aes(Areal_m2))+
+        geom_histogram(
+          fill = "#FFCC99",
+          colour = "grey20",
+          linewidth=1.5,
+          breaks=c(0,249,499,1000,2000, 5000))+
+        theme_bw(base_size = myBase_size)
+      
+    }
+  }})
 
 output$warning2 <- renderText(if(input$variable1 %in% varList_special_trunkert) "Kun de 15 vanligste grupperingene er vist (målt i antall lokaliteter)")
 
