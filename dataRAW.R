@@ -140,8 +140,9 @@ dat <- dat %>%
 
 # Calculate area
 # Need to divide m2 by 1e+6 to get km2
-dat$km2 <- drop_units(st_area(dat))/100000
-dat$m2<-drop_units(st_area(dat))
+dat$m2 <- drop_units(st_area(dat))
+dat$km2<-dat$m2/1e+6
+
 
 
 # Some recoding --------------------------------------------
@@ -315,7 +316,7 @@ dat2_long_3 <- dat2_long_3 %>%
   mutate(oppdragstaker = recode(oppdragstaker,
                                 !!!temp2))
 
-# saveRDS(dat2, "shinyData/naturtyper.rds")
-# saveRDS(dat2_long_3, "shinyData/naturtyper_long.rds")
+saveRDS(dat2, "shinyData/naturtyper.rds")
+saveRDS(dat2_long_3, "shinyData/naturtyper_long.rds")
 
 
