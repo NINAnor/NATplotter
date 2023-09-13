@@ -7,6 +7,7 @@ library(units)
 
 # UPDATE 15.02.23: Updated the script to include year 2022. Several of the columns had new names!
 
+# UPDATE 29.06.23 to get the correct m2 values 
 
 varList <- c("kartleggingsår", 
                        "tilstand", 
