@@ -493,11 +493,11 @@ server <- function(input, output, session) ({
                       values_from = NiN_variable_value) %>%
           full_join(select(naturtyper, 
                            identifikasjon_lokalId, 
-                           km2, 
+                           km2,
                            kartleggingsår),
                     by = "identifikasjon_lokalId") %>%
           select(identifikasjon_lokalId, km2, 2, kartleggingsår)
-      } else { select(., identifikasjon_lokalId, km2, 
+      } else { select(., identifikasjon_lokalId, km2,
                       input$variable1, kartleggingsår) %>%
           distinct(., identifikasjon_lokalId, .keep_all = T)}}
     
@@ -525,7 +525,7 @@ server <- function(input, output, session) ({
       group_by(first_variable) %>%
       {if (input$myFacet != "Ingen") group_by(., second_variable, .add=T) else . } %>%
       summarise(Antall_lokaliteter = n(),
-                Areal_km2 = round(sum(km2), 0))
+                Areal_km2 = round(sum(km2), 6))
     
     if(input$variable1 %in% varList_special) 
       temp_out <- temp_out %>% 
