@@ -169,6 +169,9 @@ ui <-
                          )
                )
              ),
+    
+    # '-------------       
+    # **TAB 3 Naturtyper - Detaljert ----
     tabPanel("Naturtyper - detaljert",
              sidebarLayout(
                sidebarPanel(width=3,
@@ -325,7 +328,8 @@ server <- function(input, output, session) ({
       filter(naturtype == input$naturtype) %>%
       group_by(kartleggingsår) %>%
       summarise(Antall_lokaliteter = n(),
-                Areal_km2 = round(sum(km2), 0))
+                Areal_km2 = round(sum(km2), 0),
+                Areal_m2 = round(sum(m2), 0))
   })
   
   ntyp_selected_tilstand <- reactive({
@@ -333,7 +337,8 @@ server <- function(input, output, session) ({
       filter(naturtype == input$naturtype) %>%
       group_by(tilstand) %>%
       summarise(Antall_lokaliteter = n(),
-                Areal_km2 = round(sum(km2), 0))
+                Areal_km2 = round(sum(km2), 0),
+                Areal_m2 = round(sum(m2), 0))
   })
   
   ntyp_selected_natur <- reactive({
@@ -341,7 +346,8 @@ server <- function(input, output, session) ({
       filter(naturtype == input$naturtype) %>%
       group_by(naturmangfold) %>%
       summarise(Antall_lokaliteter = n(),
-                Areal_km2 = round(sum(km2), 0))
+                Areal_km2 = round(sum(km2), 0),
+                Areal_m2 = round(sum(m2), 0))
   })
   
   ntyp_selected_kvalitet <- reactive({
@@ -349,7 +355,8 @@ server <- function(input, output, session) ({
       filter(naturtype == input$naturtype) %>%
       group_by(lokalitetskvalitet) %>%
       summarise(Antall_lokaliteter = n(),
-                Areal_km2 = round(sum(km2), 0))
+                Areal_km2 = round(sum(km2), 0),
+                Areal_m2 = round(sum(m2), 0))
   })
   
   
@@ -364,7 +371,7 @@ server <- function(input, output, session) ({
   })
   
   output$ntyp_years_area <- renderPlot({
-    gg_out <- ggplot(ntyp_selected(), aes(x = kartleggingsår, y = Areal_km2))+
+    gg_out <- ggplot(ntyp_selected(), aes(x = kartleggingsår, y = Areal_m2))+
       geom_bar(stat="identity",
                fill = "#FF9933",
                colour = "grey20",
@@ -384,7 +391,7 @@ server <- function(input, output, session) ({
   })
   
   output$ntyp_tilstand_area <- renderPlot({
-    gg_out <- ggplot(ntyp_selected_tilstand(), aes(x = tilstand, y = Areal_km2))+
+    gg_out <- ggplot(ntyp_selected_tilstand(), aes(x = tilstand, y = Areal_m2))+
       geom_bar(stat="identity",
                fill = "#FF9933",
                colour = "grey20",
@@ -404,7 +411,7 @@ server <- function(input, output, session) ({
   })
   
   output$ntyp_natur_area <- renderPlot({
-    gg_out <- ggplot(ntyp_selected_natur(), aes(x = naturmangfold, y = Areal_km2))+
+    gg_out <- ggplot(ntyp_selected_natur(), aes(x = naturmangfold, y = Areal_m2))+
       geom_bar(stat="identity",
                fill = "#FF9933",
                colour = "grey20",
@@ -424,7 +431,7 @@ server <- function(input, output, session) ({
   })
   
   output$ntyp_kvalitet_area <- renderPlot({
-    gg_out <- ggplot(ntyp_selected_kvalitet(), aes(x = lokalitetskvalitet, y = Areal_km2))+
+    gg_out <- ggplot(ntyp_selected_kvalitet(), aes(x = lokalitetskvalitet, y = Areal_m2))+
       geom_bar(stat="identity",
                fill = "#FF9933",
                colour = "grey20",
