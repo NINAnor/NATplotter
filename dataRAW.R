@@ -3,7 +3,7 @@ library(tidyverse)
 library(units)
 
 # This script take the file downloaded from geoNorge and processes it for the shiny app.
-# Replace the file and rerun the script when neccessary.
+# Replace the file and rerun the script when necessary.
 
 # UPDATE 15.02.23: Updated the script to include year 2022. Several of the columns had new names!
 
@@ -66,7 +66,7 @@ counties <- counties %>%
                        "TrÃ¸ndelag" = "Trøndelag"))
 
 
-# Finding and removing 'old' nature types that were not mapped in 2022 ---------------
+# Finding and removing 'old' nature types that were not mapped after 2018 ---------------
 # list all types
 keepers_pre <- unique(dat$naturtype)
 #Extract the year when these were mapped
@@ -79,8 +79,8 @@ keepers_df <- data.frame(
   "Nature_type" = keepers_pre,
   "Year"        = years
 )
-# find those mapped in 2021
-keepers <- keepers_df$Nature_type[grepl("2022" , keepers_df$Year)]
+# find those only mapped in 2018
+keepers <- keepers_df$Nature_type[grepl("2019|2020|2021|2022" , keepers_df$Year)]
 # and cut the rest
 dat <- dat[dat$naturtype %in% keepers,]
 
@@ -200,7 +200,7 @@ dat2_long <- tidyr::separate_rows(dat2, ninBeskrivelsesvariable, sep=",") %>%
 # The 'expected two pieces' warning is fine to ignore
 
 
-# Remove nin-variables not recorded in 2021 ---------------
+# Remove nin-variables not recorded in 2021 or 2022 ---------------
 # list all types
 var_keepers_pre <- unique(dat2_long$NiN_variable_code)
 #Extract the year when these were mapped
@@ -214,7 +214,7 @@ var_keepers_df <- data.frame(
   "Year"        = years
 )
 # find those mapped in 2021
-keepers_var <- var_keepers_df$variable[grepl("2021" , var_keepers_df$Year)]
+keepers_var <- var_keepers_df$variable[grepl("2021|2022" , var_keepers_df$Year)]
 # and cut the rest
 dat2_long <- dat2_long[dat2_long$NiN_variable_code %in% keepers_var,]
 
@@ -258,7 +258,7 @@ dat2 <- dat2 %>%
   mutate("måned" = substr(kartleggingsdato, 5, 6))
 
 
-# Add natur type code
+# Add nature type code
 # to the start of naturtype name in order to sort better
 get_code <- dat2 %>%
   filter(grepl("ntyp", naturtypeKode)) %>%
