@@ -652,7 +652,7 @@ server <- function(input, output, session) ({
     antall_lok <- nrow(naturtyper)
     tagList(
       p("Denne appen har som hensikt å gjøre det lettere å undersøke datasettet Naturtyper etter Miljødirektoratets Instruks, spesielt med tanke på fordelingen av feltregistrerte variabler og aggregterte tilstand- eller kvalitetsvariabler på tvers av romlig og tidsmessig variasjon."),
-      p("See ", tags$a(href="https://github.com/NINAnor/naturtypedata/blob/main/dataRAW.R", target='_blank', "her"), " for detaljer om hvordan datasettet er tilrettelagt. Datasettet består av", antall, "naturtyper som er kartlagt etter Miljødirekatoratets instruks senest i 2021. Dette utgjør", antall_lok, "lokaliteter. Kartleggingsinstruksen inneholder 111 natutyper i 2022. Det er antatt at de resterende typene som ikke finnes i dette datasettet gjelder typer som  kartlegges med fjernmåling, eller som ikke er påmøtt i felt enda. Dette bør undersøkes og evt bekreftes." )
+      p("See ", tags$a(href="https://github.com/NINAnor/naturtypedata/blob/main/dataRAW.R", target='_blank', "her"), " for detaljer om hvordan datasettet er tilrettelagt. Datasettet består av", antall, "naturtyper som er kartlagt etter Miljødirekatoratets instruks. Dette utgjør", antall_lok, "lokaliteter. Naturtyper som kun var kartlagt i 2018 er utelatt. Kartleggingsinstruksen inneholder 111 natutyper i 2022." )
     )
   })
   
