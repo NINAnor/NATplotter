@@ -67,7 +67,7 @@ myBase_size <- 20
 
 ui <- 
   navbarPage(
-    title = "Naturtyper etter Miljødirektoratets Instruks",
+    title = "NATplotter",
     
     # '-------------       
     # **TAB 1 ----
